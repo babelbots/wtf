@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-background: #131317;
+  --color-on-background: #e4e1e7;
+  
+  --color-surface: #131317;
+  --color-surface-dim: #131317;
+  --color-surface-container-lowest: #0e0e12;
+  --color-surface-container-low: #1b1b1f;
+  --color-surface-container: #1f1f23;
+  --color-surface-container-high: #2a2a2e;
+  --color-surface-container-highest: #353439;
+  --color-on-surface: #e4e1e7;
+  --color-on-surface-variant: #c7c4d8;
+  --color-outline: #918fa1;
+  --color-outline-variant: #464555;
+  
+  --color-primary: #635bff; /* Using the darker container color for better contrast as primary */
+  --color-on-primary: #ffffff;
+  --color-primary-light: #c3c0ff;
+  
+  --color-secondary: #d3ef46; /* Atomic Lime */
+  --color-on-secondary: #181e00;
+  --color-secondary-container: #a2bc01;
+  
+  --color-tertiary: #ffb3ae;
+  --color-error: #ffb4ab;
+
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)];
+  }
+  
+  .glass-panel {
+    @apply bg-[#1f1f23]/40 backdrop-blur-xl border border-white/10;
+  }
+
+  .pill-shadow {
+    box-shadow: 0 4px 0 0 rgba(0, 0, 0, 0.2);
+  }
+  
+  .pill-shadow:active {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.2);
+    transform: translateY(2px);
+  }
+
+  .shadow-glow {
+    box-shadow: 0 10px 40px -10px rgba(211, 239, 70, 0.3);
+  }
+  
+  .text-shadow-glow {
+    text-shadow: 0 0 10px rgba(211, 239, 70, 0.5);
+  }
+
+  .vibrant-glow-purple {
+    background: radial-gradient(circle at top right, rgba(99, 91, 255, 0.2), transparent 60%);
+  }
+
+  .vibrant-glow-green {
+    background: radial-gradient(circle at bottom left, rgba(162, 188, 1, 0.15), transparent 60%);
+  }
+  
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+}
+
+body {
+  @apply bg-background text-on-background font-sans antialiased;
+  min-height: 100dvh;
+}

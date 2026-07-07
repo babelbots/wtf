@@ -1,0 +1,70 @@
+{
+  "collections": [
+    {
+      "name": "users",
+      "documentId": "uid",
+      "description": "User profiles. Managed securely, users can only read/write their own profile.",
+      "fields": {
+        "name": "string",
+        "email": "string",
+        "avatarUrl": "string",
+        "defaultBoxId": "string (optional)",
+        "createdAt": "timestamp"
+      }
+    },
+    {
+      "name": "groups",
+      "documentId": "auto",
+      "description": "Fitness boxes and private groups.",
+      "fields": {
+        "name": "string",
+        "type": "string ('official' or 'private')",
+        "joinCode": "string (uppercase unique)",
+        "memberCount": "number",
+        "createdAt": "timestamp",
+        "ownerId": "string"
+      },
+      "subcollections": [
+        {
+          "name": "members",
+          "documentId": "uid",
+          "description": "Members of the group.",
+          "fields": {
+            "role": "string ('admin' or 'member')",
+            "joinedAt": "timestamp"
+          }
+        },
+        {
+          "name": "wods",
+          "documentId": "auto",
+          "description": "Workouts of the day for the group.",
+          "fields": {
+            "date": "string (YYYY-MM-DD)",
+            "title": "string",
+            "description": "string",
+            "strength": "string (optional)",
+            "metcon": "string",
+            "timeCap": "string (optional)",
+            "createdAt": "timestamp",
+            "authorId": "string"
+          }
+        },
+        {
+          "name": "results",
+          "documentId": "auto",
+          "description": "User results for a specific WOD.",
+          "fields": {
+            "wodId": "string",
+            "userId": "string",
+            "weight": "string (optional)",
+            "timeOrReps": "string",
+            "scale": "string ('rx' or 'scaled')",
+            "isCapped": "boolean",
+            "notes": "string",
+            "loggedAt": "timestamp"
+          }
+        }
+      ]
+    }
+  ]
+}
