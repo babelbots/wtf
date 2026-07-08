@@ -430,11 +430,11 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
           <>
             {/* WOD Card */}
             <section className="glass-panel rounded-3xl p-6 relative overflow-hidden">
-              <div className="absolute top-6 right-6 opacity-20">
+              <div className="absolute top-6 right-6 opacity-20 pointer-events-none">
                 <Dumbbell size={48} />
               </div>
               
-              <div className="flex justify-between items-start mb-4">
+              <div className="relative z-10 flex justify-between items-start mb-4">
                 <div className="inline-block bg-secondary/20 text-secondary text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-widest">
                   {wod.date || 'WOD of the Day'}
                 </div>
