@@ -420,19 +420,21 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
            <div className="text-center text-on-surface-variant my-12 p-8 border-2 border-dashed border-outline-variant/30 rounded-3xl">
              <form onSubmit={handleCreateWod} className="text-left space-y-4 glass-panel p-6 rounded-2xl border border-white/5">
                    <div className="flex gap-4">
-                     <label className={`flex-1 cursor-pointer bg-surface-container border-2 border-dashed border-outline-variant/30 rounded-xl p-4 flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors ${isTranscribing ? 'opacity-50' : ''}`}>
-                       {isTranscribing ? (
-                         <div className="w-6 h-6 mb-2 border-2 border-secondary/30 border-t-secondary rounded-full animate-spin" />
-                       ) : (
-                         <Camera size={24} className="mb-2" />
-                       )}
-                       <span className="text-xs font-bold uppercase tracking-wider text-center">
-                         {isTranscribing ? 'Analyzing...' : 'Upload Photo'}
-                       </span>
-                       <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isTranscribing} />
-                     </label>
+                     {!newWodImage && (
+                       <label className={`flex-1 cursor-pointer bg-surface-container border-2 border-dashed border-outline-variant/30 rounded-xl p-4 flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors ${isTranscribing ? 'opacity-50' : ''}`}>
+                         {isTranscribing ? (
+                           <div className="w-6 h-6 mb-2 border-2 border-secondary/30 border-t-secondary rounded-full animate-spin" />
+                         ) : (
+                           <Camera size={24} className="mb-2" />
+                         )}
+                         <span className="text-xs font-bold uppercase tracking-wider text-center">
+                           {isTranscribing ? 'Analyzing...' : 'Upload Photo'}
+                         </span>
+                         <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isTranscribing} />
+                       </label>
+                     )}
                      {newWodImage && (
-                       <div className="flex-1 rounded-xl overflow-hidden border border-white/5 relative h-28">
+                       <div className="w-full rounded-xl overflow-hidden border border-white/5 relative h-28">
                          <img src={newWodImage} alt="WOD" className="w-full h-full object-cover" />
                          <button type="button" onClick={() => setNewWodImage(null)} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black">
                            <X size={14} />
