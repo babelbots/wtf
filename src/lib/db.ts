@@ -156,3 +156,13 @@ export async function getUserResultsHistory(userId: string) {
     return timeB.localeCompare(timeA);
   });
 }
+
+export async function promoteToAdmin(groupId: string, targetUserId: string) {
+  const memberRef = doc(db, 'groups', groupId, 'members', targetUserId);
+  await updateDoc(memberRef, { role: 'admin' });
+}
+
+export async function updateSeasonDates(groupId: string, startDate: string, endDate: string) {
+  const groupRef = doc(db, 'groups', groupId);
+  await updateDoc(groupRef, { seasonStartDate: startDate, seasonEndDate: endDate });
+}

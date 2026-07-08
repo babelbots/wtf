@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Trophy, Flame, Ghost, Calendar, XCircle, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Trophy, Flame, Ghost, Calendar, XCircle, TrendingUp, Settings, Shield } from 'lucide-react';
 import { doc, onSnapshot, collection, query, orderBy, updateDoc, getDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, promoteToAdmin, updateSeasonDates } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
 
 interface SeasonRankingScreenProps {
@@ -13,6 +13,22 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
   const { user } = useAuth();
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [seasonStart, setSeasonStart] = useState('');
+  const [seasonEnd, setSeasonEnd] = useState('');
+
+  useEffect(() => {
+    if (!groupId) return;
+    const groupRef = doc(db, 'groups', groupId);
+    const unsub = onSnapshot(groupRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.seasonStartDate) setSeasonStart(data.seasonStartDate);
+        if (data.seasonEndDate) setSeasonEnd(data.seasonEndDate);
+      }
+    });
+    return () => unsub();
+  }, [groupId]);
 
   useEffect(() => {
     if (!groupId) return;
@@ -44,6 +60,9 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
       // Sort members by points descending (default 100)
       fetchedMembers.sort((a, b) => (b.points ?? 100) - (a.points ?? 100));
       
+      const currentUserMember = fetchedMembers.find(m => m.id === user?.uid);
+      setIsAdmin(currentUserMember?.role === 'admin');
+
       setMembers(fetchedMembers);
       setLoading(false);
     });
@@ -85,6 +104,27 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
     }
   };
 
+  const handleUpdateSeason = async () => {
+    if (!seasonStart || !seasonEnd) return;
+    try {
+      await updateSeasonDates(groupId, seasonStart, seasonEnd);
+      alert('Season dates updated!');
+    } catch (e) {
+      console.error(e);
+      alert('Failed to update season dates');
+    }
+  };
+
+  const handleMakeAdmin = async (targetId: string) => {
+    if (!window.confirm('Are you sure you want to make this user an admin?')) return;
+    try {
+      await promoteToAdmin(groupId, targetId);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to promote to admin');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-28 pt-16">
       <header className="fixed top-0 w-full z-50 bg-surface/60 backdrop-blur-xl border-b border-white/5 shadow-md flex justify-between items-center px-4 md:px-8 py-3 h-16">
@@ -100,6 +140,42 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
       </header>
 
       <main className="max-w-3xl mx-auto px-4 md:px-8 py-6 flex flex-col gap-8">
+        {isAdmin && (
+          <section className="glass-panel p-6 rounded-3xl border border-secondary/50 bg-secondary/5">
+            <h2 className="text-xl font-bold text-secondary mb-4 flex items-center gap-2">
+              <Settings /> Admin Controls
+            </h2>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col md:flex-row gap-4 items-end">
+                <div className="flex-1 w-full">
+                  <label className="block text-sm font-bold text-primary-light mb-1">Season Start</label>
+                  <input 
+                    type="date" 
+                    value={seasonStart}
+                    onChange={(e) => setSeasonStart(e.target.value)}
+                    className="w-full bg-surface-container rounded-xl p-3 text-on-surface border border-white/10"
+                  />
+                </div>
+                <div className="flex-1 w-full">
+                  <label className="block text-sm font-bold text-primary-light mb-1">Season End</label>
+                  <input 
+                    type="date" 
+                    value={seasonEnd}
+                    onChange={(e) => setSeasonEnd(e.target.value)}
+                    className="w-full bg-surface-container rounded-xl p-3 text-on-surface border border-white/10"
+                  />
+                </div>
+                <button 
+                  onClick={handleUpdateSeason}
+                  className="bg-secondary text-on-secondary px-6 py-3 rounded-xl font-bold hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
+                >
+                  Save Dates
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
         <section className="glass-panel p-6 rounded-3xl border border-secondary/20">
           <h2 className="text-xl font-bold text-secondary mb-2 flex items-center gap-2">
             <Flame /> Current Season Leaderboard
@@ -133,7 +209,16 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
                     </div>
                   </div>
 
-                  {member.id !== user?.uid && (
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                    {isAdmin && member.id !== user?.uid && member.role !== 'admin' && (
+                      <button 
+                        onClick={() => handleMakeAdmin(member.id)}
+                        className="text-xs font-bold bg-primary/20 text-primary-light px-3 py-1.5 rounded-full hover:bg-primary/30 transition-colors flex items-center gap-1"
+                      >
+                        <Shield size={14} /> Make Admin
+                      </button>
+                    )}
+                    {member.id !== user?.uid && (
                     <button 
                       onClick={() => handleReportMissedDay(member.id)}
                       disabled={
@@ -144,7 +229,8 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
                     >
                       🚨 Missed Today
                     </button>
-                  )}
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
