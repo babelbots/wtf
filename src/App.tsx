@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Screen } from './types';
 import { LoginScreen } from './screens/LoginScreen';
 import { WodScreen } from './screens/WodScreen';
