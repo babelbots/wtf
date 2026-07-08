@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Trophy, Flame, Ghost, Calendar, XCircle, TrendingUp, Settings, Shield } from 'lucide-react';
 import { doc, onSnapshot, collection, query, orderBy, updateDoc, getDoc } from 'firebase/firestore';
-import { db, promoteToAdmin, updateSeasonDates } from '../lib/db';
+import { promoteToAdmin, updateSeasonDates } from '../lib/db';
+import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 
 interface SeasonRankingScreenProps {
