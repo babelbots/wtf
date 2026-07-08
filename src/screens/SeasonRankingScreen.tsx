@@ -18,7 +18,8 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
     if (!groupId) return;
 
     const membersRef = collection(db, 'groups', groupId, 'members');
-    const q = query(membersRef, orderBy('points', 'desc'));
+    // Remove orderBy to ensure members without the points field are included, then sort in JS
+    const q = query(membersRef);
     
     const unsubscribe = onSnapshot(q, async (snap) => {
       const fetchedMembers = await Promise.all(snap.docs.map(async (d) => {
@@ -39,6 +40,10 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
         
         return { id: d.id, ...data, name, avatarUrl };
       }));
+      
+      // Sort members by points descending (default 100)
+      fetchedMembers.sort((a, b) => (b.points ?? 100) - (a.points ?? 100));
+      
       setMembers(fetchedMembers);
       setLoading(false);
     });
@@ -52,9 +57,27 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
       const memberRef = doc(db, 'groups', groupId, 'members', targetUserId);
       const memberSnap = await getDoc(memberRef);
       if (memberSnap.exists()) {
-        const currentPoints = memberSnap.data().points || 100;
+        const data = memberSnap.data();
+        const currentPoints = data.points || 100;
+        
+        // Check if user already logged a WOD today
+        const today = new Date().toISOString().split('T')[0];
+        const lastWodDate = data.lastWodDate ? data.lastWodDate.split('T')[0] : null;
+        if (lastWodDate === today) {
+          alert('This athlete already logged a WOD today!');
+          return;
+        }
+
+        // Check if already reported today
+        const lastReportedDate = data.lastReportedDate ? data.lastReportedDate.split('T')[0] : null;
+        if (lastReportedDate === today) {
+          alert('This athlete was already reported for missing today!');
+          return;
+        }
+
         await updateDoc(memberRef, {
-          points: currentPoints - 5
+          points: currentPoints - 5,
+          lastReportedDate: new Date().toISOString()
         });
       }
     } catch (e) {
@@ -103,9 +126,9 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
                       </div>
                     )}
                     <div>
-                      <h4 className="font-bold text-on-surface">{member.id === user?.uid ? `${member.name} (Tú)` : member.name}</h4>
+                      <h4 className="font-bold text-on-surface">{member.id === user?.uid ? `${member.name} (You)` : member.name}</h4>
                       <div className="text-xs text-on-surface-variant flex items-center gap-1">
-                        <TrendingUp size={12} /> {member.points || 100} PTS
+                        <TrendingUp size={12} /> {member.points ?? 100} PTS
                       </div>
                     </div>
                   </div>
@@ -113,9 +136,13 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
                   {member.id !== user?.uid && (
                     <button 
                       onClick={() => handleReportMissedDay(member.id)}
-                      className="text-xs font-bold bg-error/20 text-error px-3 py-1.5 rounded-full hover:bg-error/30 transition-colors flex items-center gap-1"
+                      disabled={
+                        (member.lastWodDate && member.lastWodDate.split('T')[0] === new Date().toISOString().split('T')[0]) ||
+                        (member.lastReportedDate && member.lastReportedDate.split('T')[0] === new Date().toISOString().split('T')[0])
+                      }
+                      className="text-xs font-bold bg-error/20 text-error px-3 py-1.5 rounded-full hover:bg-error/30 transition-colors flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
-                      <XCircle size={14} /> Sumar Falta
+                      <XCircle size={14} /> Missed Today
                     </button>
                   )}
                 </div>
