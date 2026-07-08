@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword, OAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -36,6 +36,28 @@ export const loginWithGoogle = async () => {
     return result.user;
   } catch (error) {
     console.error("Error signing in with Google", error);
+    throw error;
+  }
+};
+
+export const appleProvider = new OAuthProvider('apple.com');
+
+export const loginWithEmail = async (email: string, pass: string) => {
+  try {
+    const result = await signInWithEmailAndPassword(auth, email, pass);
+    return result.user;
+  } catch (error) {
+    console.error("Error signing in with email", error);
+    throw error;
+  }
+};
+
+export const loginWithApple = async () => {
+  try {
+    const result = await signInWithPopup(auth, appleProvider);
+    return result.user;
+  } catch (error) {
+    console.error("Error signing in with Apple", error);
     throw error;
   }
 };

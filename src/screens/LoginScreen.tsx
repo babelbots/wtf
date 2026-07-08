@@ -1,9 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Lock, Dumbbell } from 'lucide-react';
-import { loginWithGoogle } from '../lib/firebase';
+import { loginWithGoogle, loginWithEmail, loginWithApple } from '../lib/firebase';
 
 export function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [bgIndex, setBgIndex] = useState(0);
+
+  const backgrounds = [
+    '/bg_crossfit_1_1783526187355.jpg',
+    '/bg_crossfit_2_1783526197644.jpg',
+    '/bg_crossfit_3_1783526207597.jpg'
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBgIndex((prev) => (prev + 1) % backgrounds.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleGoogleLogin = async () => {
     try {
@@ -14,15 +30,37 @@ export function LoginScreen() {
     }
   };
 
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setError(null);
+      await loginWithEmail(email, password);
+    } catch (err: any) {
+      setError(err.message || 'Failed to login with email.');
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    try {
+      setError(null);
+      await loginWithApple();
+    } catch (err: any) {
+      setError(err.message || 'Failed to login with Apple.');
+    }
+  };
+
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center px-6 py-12 overflow-hidden">
 
       {/* Background Layer */}
       <div className="absolute inset-0 z-0">
-        <div 
-          className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 scale-105"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=2070&auto=format&fit=crop')" }}
-        />
+        {backgrounds.map((bg, idx) => (
+          <div 
+            key={bg}
+            className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ${idx === bgIndex ? 'opacity-100 scale-105' : 'opacity-0 scale-100'}`}
+            style={{ backgroundImage: `url('${bg}')` }}
+          />
+        ))}
         <div className="absolute inset-0 bg-gradient-to-br from-primary-light/40 to-background/95" />
       </div>
 
@@ -31,8 +69,8 @@ export function LoginScreen() {
         
         {/* Brand Header */}
         <header className="text-center mb-10 animate-in slide-in-from-top duration-700">
-          <div className="inline-flex items-center justify-center p-4 bg-secondary-container rounded-full mb-6 shadow-glow">
-            <Dumbbell className="text-secondary w-8 h-8" strokeWidth={2.5} />
+          <div className="inline-flex items-center justify-center mb-6 shadow-glow">
+            <img src="/logo_wtf_1783526217144.jpg" alt="WTF Logo" className="w-24 h-24 rounded-full border-2 border-secondary object-cover" />
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold text-on-background mb-2 tracking-tight">
             WOD the FAQ
@@ -44,7 +82,7 @@ export function LoginScreen() {
 
         {/* Login Card */}
         <section className="w-full glass-card rounded-2xl p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-500 delay-150">
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-6" onSubmit={handleEmailLogin}>
             
             {/* Email Input */}
             <div className="space-y-2">
@@ -55,6 +93,8 @@ export function LoginScreen() {
                 </div>
                 <input 
                   type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="beast@mode.com"
                   className="w-full h-14 pl-12 pr-4 bg-surface-container rounded-xl border-2 border-transparent focus:border-secondary focus:ring-0 text-on-surface placeholder:text-outline-variant transition-all outline-none"
                   required
@@ -71,6 +111,8 @@ export function LoginScreen() {
                 </div>
                 <input 
                   type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full h-14 pl-12 pr-4 bg-surface-container rounded-xl border-2 border-transparent focus:border-secondary focus:ring-0 text-on-surface placeholder:text-outline-variant transition-all outline-none"
                   required
@@ -114,7 +156,7 @@ export function LoginScreen() {
               </svg>
               <span className="font-bold text-sm">Google</span>
             </button>
-            <button className="flex items-center justify-center gap-2 h-14 glass-panel rounded-full hover:bg-white/10 transition-colors active:scale-95">
+            <button type="button" onClick={handleAppleLogin} className="flex items-center justify-center gap-2 h-14 glass-panel rounded-full hover:bg-white/10 transition-colors active:scale-95">
               <svg className="w-5 h-5 fill-current text-white" viewBox="0 0 24 24">
                 <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.844-1.026 1.403-2.454 1.247-3.83-1.182.052-2.61.792-3.467 1.792-.767.883-1.442 2.35-1.26 3.688 1.312.104 2.636-.623 3.48-1.65z"></path>
               </svg>
