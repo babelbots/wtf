@@ -23,7 +23,21 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
     const unsubscribe = onSnapshot(q, async (snap) => {
       const fetchedMembers = await Promise.all(snap.docs.map(async (d) => {
         const data = d.data();
-        return { id: d.id, ...data };
+        let name = `Member ${d.id.substring(0, 5)}`;
+        let avatarUrl = '';
+        
+        try {
+          const userDoc = await getDoc(doc(db, 'users', d.id));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            name = userData.name || name;
+            avatarUrl = userData.avatarUrl || '';
+          }
+        } catch (e) {
+          console.error('Error fetching user', e);
+        }
+        
+        return { id: d.id, ...data, name, avatarUrl };
       }));
       setMembers(fetchedMembers);
       setLoading(false);
@@ -81,8 +95,15 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${idx === 0 ? 'bg-secondary text-on-secondary shadow-glow' : 'bg-surface-container-high text-on-surface'}`}>
                       {idx + 1}
                     </div>
+                    {member.avatarUrl ? (
+                      <img src={member.avatarUrl} alt={member.name} className="w-10 h-10 rounded-full border border-outline-variant object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center font-bold text-sm text-on-surface">
+                        {member.name?.substring(0, 2).toUpperCase()}
+                      </div>
+                    )}
                     <div>
-                      <h4 className="font-bold text-on-surface">{member.id === user?.uid ? 'You' : `Member ${member.id.substring(0, 5)}`}</h4>
+                      <h4 className="font-bold text-on-surface">{member.id === user?.uid ? `${member.name} (Tú)` : member.name}</h4>
                       <div className="text-xs text-on-surface-variant flex items-center gap-1">
                         <TrendingUp size={12} /> {member.points || 100} PTS
                       </div>
@@ -94,7 +115,7 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
                       onClick={() => handleReportMissedDay(member.id)}
                       className="text-xs font-bold bg-error/20 text-error px-3 py-1.5 rounded-full hover:bg-error/30 transition-colors flex items-center gap-1"
                     >
-                      <XCircle size={14} /> Report Falta
+                      <XCircle size={14} /> Sumar Falta
                     </button>
                   )}
                 </div>
