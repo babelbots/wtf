@@ -97,7 +97,8 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
 
         await updateDoc(memberRef, {
           points: currentPoints - 5,
-          lastReportedDate: new Date().toISOString()
+          lastReportedDate: new Date().toISOString(),
+          reportedBy: user.displayName || 'Un compañero'
         });
       }
     } catch (e) {
@@ -220,16 +221,20 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
                       </button>
                     )}
                     {member.id !== user?.uid && (
-                    <button 
-                      onClick={() => handleReportMissedDay(member.id)}
-                      disabled={
-                        (member.lastWodDate && new Date(member.lastWodDate).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')) ||
-                        (member.lastReportedDate && new Date(member.lastReportedDate).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA'))
-                      }
-                      className="text-xs font-bold bg-error/20 text-error px-3 py-1.5 rounded-full hover:bg-error/30 transition-colors flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      🚨 Missed Today
-                    </button>
+                      (() => {
+                        const isMissedToday = (member.lastWodDate && new Date(member.lastWodDate).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')) ||
+                                              (member.lastReportedDate && new Date(member.lastReportedDate).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA'));
+                        
+                        return (
+                          <button 
+                            onClick={() => handleReportMissedDay(member.id)}
+                            disabled={isMissedToday}
+                            className="text-xs font-bold bg-error/20 text-error px-3 py-1.5 rounded-full hover:bg-error/30 transition-colors flex items-center gap-1 disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            🚨 {isMissedToday && member.reportedBy ? `Reportado por ${member.reportedBy.split(' ')[0]}` : 'Missed Today'}
+                          </button>
+                        );
+                      })()
                     )}
                   </div>
                 </div>

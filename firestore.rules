@@ -33,7 +33,11 @@ service cloud.firestore {
       // Group Members
       match /members/{memberId} {
         allow read: if isAuthenticated();
-        allow write: if isAuthenticated() && (request.auth.uid == memberId || get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == 'admin');
+        // Allow members of the group to update (e.g. for reporting missed days)
+        allow write: if isAuthenticated() && (
+          request.auth.uid == memberId || 
+          get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data != null
+        );
       }
 
       // Group WODs
