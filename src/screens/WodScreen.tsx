@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Camera, Dumbbell, Trophy, ArrowLeft, X, MoreVertical, LogOut, Trash2, Send } from 'lucide-react';
 import { TopBar } from '../components/layout/TopBar';
 import { leaveGroup, deleteGroup } from '../lib/db';
@@ -358,6 +358,17 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
     }
   };
 
+
+  const combinedFeed = useMemo(() => {
+    const feed: any[] = [];
+    results.forEach(r => feed.push({ ...r, feedType: 'result', timestamp: r.loggedAt || r.createdAt || '' }));
+    chatMessages.forEach(c => feed.push({ ...c, feedType: 'chat', timestamp: c.createdAt || '' }));
+    return feed.sort((a, b) => {
+      const timeA = a.timestamp || '';
+      const timeB = b.timestamp || '';
+      return timeB.localeCompare(timeA);
+    });
+  }, [results, chatMessages]);
 
   return (
     <div className="min-h-screen bg-background pb-28 pt-16">
@@ -816,90 +827,87 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
 
           {activeLeaderboardTab === 'community' && (
             <div className="mt-8 space-y-6">
-              <div className="space-y-3">
-                <h3 className="text-lg font-bold text-on-surface">Activity</h3>
-                {results.length === 0 ? (
+              {/* Chat Input (Top) */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={chatText}
+                  onChange={e => setChatText(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSendChatMessage();
+                    }
+                  }}
+                  placeholder="Write a message..."
+                  className="flex-1 bg-surface-container-low rounded-full border border-transparent focus:border-secondary px-4 py-3 text-sm font-medium text-on-surface outline-none"
+                />
+                <button
+                  type="button"
+                  disabled={chatSending || !chatText.trim()}
+                  onClick={handleSendChatMessage}
+                  className="w-12 h-12 rounded-full bg-secondary text-on-secondary flex items-center justify-center disabled:opacity-50 shrink-0"
+                >
+                  <Send size={18} />
+                </button>
+              </div>
+              {chatError && (
+                <div className="bg-error/10 border border-error/20 rounded-xl px-4 py-3 text-error text-sm font-bold">
+                  {chatError}
+                </div>
+              )}
+
+              {/* Combined Feed */}
+              <div className="space-y-4">
+                {combinedFeed.length === 0 ? (
                   <div className="text-center text-on-surface-variant py-8 bg-surface-container-low rounded-2xl">
-                    No results yet.
+                    No activity yet. Be the first to post a result or say hi!
                   </div>
                 ) : (
-                  results.map((result) => (
-                    <div key={result.id} className="bg-surface-container-low rounded-2xl p-4 border border-white/5 space-y-3">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3 min-w-0">
-                          {result.userAvatar ? (
-                            <img src={result.userAvatar} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+                  combinedFeed.map((item) => {
+                    if (item.feedType === 'result') {
+                      return (
+                        <div key={`result-${item.id}`} className="bg-surface-container-low rounded-2xl p-4 border border-white/5 space-y-3">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 min-w-0">
+                              {item.userAvatar ? (
+                                <img src={item.userAvatar} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-bold text-xs shrink-0">{item.userName?.substring(0, 2).toUpperCase()}</div>
+                              )}
+                              <div className="min-w-0">
+                                <div className="font-bold text-on-surface truncate">{item.userName}</div>
+                                <div className="text-xs text-on-surface-variant font-bold uppercase tracking-wider">
+                                  Logged {item.timeOrReps} {item.isCapped ? '(capped)' : ''}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-xs font-bold text-secondary uppercase tracking-widest">{item.scale}</div>
+                          </div>
+                          {item.notes && <div className="text-sm text-on-surface-variant whitespace-pre-line">{item.notes}</div>}
+                          {item.imageUrl && (
+                            <button type="button" onClick={() => setFullScreenImage(item.imageUrl)} className="block w-full rounded-xl overflow-hidden border border-white/10">
+                              <img src={item.imageUrl} alt="Result proof" className="w-full max-h-72 object-cover" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div key={`chat-${item.id}`} className="flex gap-3 bg-surface-container-low/50 rounded-2xl p-4 border border-transparent">
+                          {item.userAvatar ? (
+                            <img src={item.userAvatar} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-bold text-xs shrink-0">{result.userName?.substring(0, 2).toUpperCase()}</div>
+                            <div className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-bold text-[10px] shrink-0">{item.userName?.substring(0, 2).toUpperCase()}</div>
                           )}
                           <div className="min-w-0">
-                            <div className="font-bold text-on-surface truncate">{result.userName}</div>
-                            <div className="text-xs text-on-surface-variant font-bold uppercase tracking-wider">
-                              Logged {result.timeOrReps} {result.isCapped ? '(capped)' : ''}
-                            </div>
+                            <div className="text-xs font-bold text-secondary mb-1">{item.userName}</div>
+                            <div className="text-sm text-on-surface whitespace-pre-line break-words">{item.text}</div>
                           </div>
                         </div>
-                        <div className="text-xs font-bold text-secondary uppercase tracking-widest">{result.scale}</div>
-                      </div>
-                      {result.notes && <div className="text-sm text-on-surface-variant whitespace-pre-line">{result.notes}</div>}
-                      {result.imageUrl && (
-                        <button type="button" onClick={() => setFullScreenImage(result.imageUrl)} className="block w-full rounded-xl overflow-hidden border border-white/10">
-                          <img src={result.imageUrl} alt="Result proof" className="w-full max-h-72 object-cover" />
-                        </button>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="text-lg font-bold text-on-surface">Chat</h3>
-                <div className="bg-surface-container-low rounded-2xl border border-white/5 p-4 space-y-4 max-h-96 overflow-y-auto">
-                  {chatMessages.length === 0 ? (
-                    <div className="text-center text-on-surface-variant py-6">No messages yet.</div>
-                  ) : (
-                    chatMessages.map((message) => (
-                      <div key={message.id} className="flex gap-3">
-                        {message.userAvatar ? (
-                          <img src={message.userAvatar} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-bold text-[10px] shrink-0">{message.userName?.substring(0, 2).toUpperCase()}</div>
-                        )}
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-secondary">{message.userName}</div>
-                          <div className="text-sm text-on-surface-variant whitespace-pre-line break-words">{message.text}</div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={chatText}
-                    onChange={e => setChatText(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleSendChatMessage();
-                      }
-                    }}
-                    placeholder="Write a message..."
-                    className="flex-1 bg-surface-container-low rounded-full border border-transparent focus:border-secondary px-4 py-3 text-sm font-medium text-on-surface outline-none"
-                  />
-                  <button
-                    type="button"
-                    disabled={chatSending || !chatText.trim()}
-                    onClick={handleSendChatMessage}
-                    className="w-12 h-12 rounded-full bg-secondary text-on-secondary flex items-center justify-center disabled:opacity-50"
-                  >
-                    <Send size={18} />
-                  </button>
-                </div>
-                {chatError && (
-                  <div className="bg-error/10 border border-error/20 rounded-xl px-4 py-3 text-error text-sm font-bold">
-                    {chatError}
-                  </div>
+                      );
+                    }
+                  })
                 )}
               </div>
             </div>
