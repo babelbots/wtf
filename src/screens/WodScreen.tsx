@@ -47,6 +47,7 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
   const [newWodNotes, setNewWodNotes] = useState('');
   const [newWodImage, setNewWodImage] = useState<string | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [transcriptionError, setTranscriptionError] = useState('');
   const [newWodCreating, setNewWodCreating] = useState(false);
   const [isEditingWod, setIsEditingWod] = useState(false);
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
@@ -106,6 +107,7 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
     if (!file) return;
     try {
       setIsTranscribing(true);
+      setTranscriptionError('');
       const base64 = await resizeImage(file);
       setNewWodImage(base64);
 
@@ -115,6 +117,9 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
         body: JSON.stringify({ imageBase64: base64 })
       });
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Could not analyze the image.');
+      }
       
       if (data.title) setNewWodTitle(data.title);
       if (data.type) {
@@ -130,9 +135,10 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
       if (desc) setNewWodDesc(desc);
     } catch (err) {
       console.error(err);
-      alert('Failed to transcribe image');
+      setTranscriptionError(err instanceof Error ? err.message : 'Failed to transcribe image.');
+    } finally {
+      setIsTranscribing(false);
     }
-    setIsTranscribing(false);
   };
 
   const handleEditClick = () => {
@@ -342,7 +348,11 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
              <form onSubmit={handleCreateWod} className="text-left space-y-4 glass-panel p-6 rounded-2xl border border-white/5">
                    <div className="flex gap-4">
                      <label className={`flex-1 cursor-pointer bg-surface-container border-2 border-dashed border-outline-variant/30 rounded-xl p-4 flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors ${isTranscribing ? 'opacity-50' : ''}`}>
-                       <Camera size={24} className="mb-2" />
+                       {isTranscribing ? (
+                         <div className="w-6 h-6 mb-2 border-2 border-secondary/30 border-t-secondary rounded-full animate-spin" />
+                       ) : (
+                         <Camera size={24} className="mb-2" />
+                       )}
                        <span className="text-xs font-bold uppercase tracking-wider text-center">
                          {isTranscribing ? 'Analyzing...' : 'Upload Photo'}
                        </span>
@@ -357,6 +367,16 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                        </div>
                      )}
                    </div>
+                   {isTranscribing && (
+                     <div className="bg-secondary/10 border border-secondary/20 rounded-xl px-4 py-3 text-secondary text-xs font-bold uppercase tracking-wider">
+                       Gemini is reading the photo and filling the workout fields...
+                     </div>
+                   )}
+                   {transcriptionError && (
+                     <div className="bg-error/10 border border-error/20 rounded-xl px-4 py-3 text-error text-sm font-bold">
+                       {transcriptionError}
+                     </div>
+                   )}
                    <div className="space-y-2">
                      <label className="text-xs font-bold text-primary-light uppercase tracking-wider">Title</label>
                      <input type="text" value={newWodTitle} onChange={e => setNewWodTitle(e.target.value)} placeholder="e.g. Hero WOD Murph" className="w-full bg-surface-container rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-secondary font-bold" />
