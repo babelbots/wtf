@@ -2,20 +2,35 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
+const defaultAuthDomain = "gen-lang-client-0951110180.firebaseapp.com";
+const isVercelApp = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app');
+const runtimeAuthDomain = isVercelApp
+  ? window.location.host
+  : import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || defaultAuthDomain;
+
 const firebaseConfig = {
-  projectId: "gen-lang-client-0951110180",
-  appId: "1:1050214145804:web:a90a502f74996279037329",
-  apiKey: "AIzaSyB261vO9IN_TcdACeRZdKDwa37UmWMJogg",
-  authDomain: "gen-lang-client-0951110180.firebaseapp.com",
-  storageBucket: "gen-lang-client-0951110180.firebasestorage.app",
-  messagingSenderId: "1050214145804",
-  measurementId: ""
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyB261vO9IN_TcdACeRZdKDwa37UmWMJogg",
+  authDomain: runtimeAuthDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "gen-lang-client-0951110180",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "gen-lang-client-0951110180.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "1050214145804",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:1050214145804:web:a90a502f74996279037329",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || ""
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app, "ai-studio-017f281f-87b3-4096-b626-56e80de17a23");
+
+// Use a custom database ID if provided, otherwise fall back to AI Studio's named database.
+// Note: standard/new Firestore projects typically use the default "(default)" database ID.
+const databaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID !== undefined
+  ? import.meta.env.VITE_FIREBASE_DATABASE_ID
+  : "ai-studio-017f281f-87b3-4096-b626-56e80de17a23";
+
+export const db = databaseId && databaseId !== "(default)"
+  ? getFirestore(app, databaseId)
+  : getFirestore(app);
 
 // Auth Providers
 export const googleProvider = new GoogleAuthProvider();
