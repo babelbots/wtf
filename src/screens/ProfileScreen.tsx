@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { User, Calendar, Target, Award, ArrowLeft, Clock, LogOut } from 'lucide-react';
+import { User, Calendar, Target, Award, ArrowLeft, Clock, LogOut, Info, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserResultsHistory } from '../lib/db';
 import { logout } from '../lib/firebase';
@@ -12,6 +12,7 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
   const { user } = useAuth();
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedWod, setSelectedWod] = useState<any>(null);
 
   useEffect(() => {
     async function loadHistory() {
@@ -112,9 +113,20 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
                           })}
                         </span>
                       </div>
-                      <h4 className="text-lg font-bold text-on-surface">
-                        {item.wod?.title || 'Unknown WOD'}
-                      </h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-lg font-bold text-on-surface">
+                          {item.wod?.title || 'Unknown WOD'}
+                        </h4>
+                        {item.wod && (
+                          <button 
+                            onClick={() => setSelectedWod(item.wod)}
+                            className="text-primary-light hover:bg-primary/20 p-1.5 rounded-full transition-colors bg-surface-container"
+                            title="View WOD info"
+                          >
+                            <Info size={16} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <span className={`text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wider ${
                       item.scale === 'rx' ? 'bg-primary/20 text-primary-light' : 'bg-surface-container-high text-on-surface-variant'
@@ -147,6 +159,35 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
           )}
         </section>
       </main>
+
+      {/* WOD Info Modal */}
+      {selectedWod && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-surface border border-white/10 rounded-3xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] shadow-2xl">
+            <div className="relative">
+              {selectedWod.imageUrl ? (
+                <img src={selectedWod.imageUrl} alt="WOD" className="w-full h-48 md:h-64 object-cover" />
+              ) : (
+                <div className="w-full h-32 bg-surface-container-high flex items-center justify-center">
+                  <Target size={40} className="text-on-surface-variant opacity-30" />
+                </div>
+              )}
+              <button 
+                onClick={() => setSelectedWod(null)}
+                className="absolute top-4 right-4 bg-black/50 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-md transition-all active:scale-95"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              <h3 className="text-2xl font-black text-on-surface mb-4">{selectedWod.title || 'WOD Info'}</h3>
+              <div className="whitespace-pre-wrap text-on-surface-variant font-medium text-sm">
+                {selectedWod.description || 'No description available for this WOD.'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
