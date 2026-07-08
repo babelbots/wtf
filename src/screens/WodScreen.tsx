@@ -43,6 +43,7 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
   const [newWodTitle, setNewWodTitle] = useState('');
   const [newWodType, setNewWodType] = useState('AMRAP');
   const [newWodDesc, setNewWodDesc] = useState('');
+  const [newWodTimeCap, setNewWodTimeCap] = useState('');
   const [newWodNotes, setNewWodNotes] = useState('');
   const [newWodImage, setNewWodImage] = useState<string | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -121,10 +122,10 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
         if (typeMatch) setNewWodType(typeMatch);
       }
       if (data.notes) setNewWodNotes(data.notes);
+      if (data.timeCap) setNewWodTimeCap(data.timeCap);
       
       let desc = data.metcon || '';
       if (data.strength) desc = `Strength:\n${data.strength}\n\nMetcon:\n${desc}`;
-      if (data.timeCap) desc += `\n\nTime Cap: ${data.timeCap}`;
       
       if (desc) setNewWodDesc(desc);
     } catch (err) {
@@ -138,6 +139,7 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
     setNewWodTitle(wod.title || '');
     setNewWodType(wod.type || 'AMRAP');
     setNewWodDesc(wod.metcon || wod.description || '');
+    setNewWodTimeCap(wod.timeCap || '');
     setNewWodNotes(wod.notes || '');
     setNewWodImage(wod.imageUrl || null);
     setIsEditingWod(true);
@@ -157,7 +159,7 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
         strength: '',
         metcon: newWodDesc,
         notes: newWodNotes,
-        timeCap: '',
+        timeCap: newWodTimeCap.trim(),
         imageUrl: newWodImage || null,
         updatedAt: new Date().toISOString()
       };
@@ -189,6 +191,7 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
     setNewWodCreating(false);
     setShowCreateForm(false);
     setIsEditingWod(false);
+    setNewWodTimeCap('');
   };
 
   const handleTimeBlur = () => {
@@ -376,6 +379,10 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                    <div className="space-y-2">
                      <label className="text-xs font-bold text-primary-light uppercase tracking-wider">Workout Details</label>
                      <textarea value={newWodDesc} onChange={e => setNewWodDesc(e.target.value)} placeholder="Describe the workout here..." className="w-full bg-surface-container rounded-xl px-4 py-3 text-sm font-medium text-on-surface outline-none focus:ring-2 focus:ring-secondary h-24 resize-none" required />
+                   </div>
+                   <div className="space-y-2">
+                     <label className="text-xs font-bold text-primary-light uppercase tracking-wider">Time Cap (Optional)</label>
+                     <input type="text" value={newWodTimeCap} onChange={e => setNewWodTimeCap(e.target.value)} placeholder="e.g. 20 min, 12:00, 30 minute cap" className="w-full bg-surface-container rounded-xl px-4 py-3 text-sm font-bold text-on-surface outline-none focus:ring-2 focus:ring-secondary" />
                    </div>
                    <div className="space-y-2">
                      <label className="text-xs font-bold text-primary-light uppercase tracking-wider">Notes & Weights (Optional)</label>
