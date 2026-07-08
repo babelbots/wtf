@@ -206,12 +206,13 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
   };
 
   const handleTimeBlur = () => {
-    let val = timeOrReps.trim();
-    if (val.includes('.') || val.includes(',')) {
-      let [mins, secs] = val.split(/[.,]/);
-      if (secs.length === 1) secs = secs + '0';
-      if (!secs) secs = '00';
-      setTimeOrReps(`${mins}:${secs}`);
+    const val = timeOrReps.trim();
+    if (/^\d+$/.test(val)) return;
+
+    const timeMatch = val.match(/^(\d+)\D+(\d{1,2})$/);
+    if (timeMatch) {
+      const [, mins, secs] = timeMatch;
+      setTimeOrReps(`${mins}:${secs.padStart(2, '0')}`);
     }
   };
 
