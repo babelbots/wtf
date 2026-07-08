@@ -950,12 +950,13 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                               return (
                                 <button
                                   key={reaction.type}
+                                  disabled={item.userId === user?.uid}
                                   onClick={() => handleReaction(item.id, reaction.type as any)}
                                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
                                     hasReacted 
                                       ? 'bg-secondary text-on-secondary shadow-glow border border-secondary' 
-                                      : 'bg-surface-container border border-outline-variant/30 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'
-                                  }`}
+                                      : 'bg-surface-container border border-outline-variant/30 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high disabled:hover:text-on-surface-variant disabled:hover:bg-surface-container'
+                                  } disabled:opacity-50 disabled:cursor-not-allowed`}
                                 >
                                   <span>{reaction.emoji}</span>
                                   {count > 0 && <span>{count}</span>}
