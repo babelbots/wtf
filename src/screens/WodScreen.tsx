@@ -274,8 +274,13 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                 <button 
                   onClick={async () => {
                     if (window.confirm('Are you sure you want to delete this group forever?')) {
-                      await deleteGroup(groupId);
-                      onBack();
+                      try {
+                        await deleteGroup(groupId);
+                        onBack();
+                      } catch (error) {
+                        console.error(error);
+                        alert('Could not delete this group. Please try again.');
+                      }
                     }
                   }}
                   className="w-full text-left px-4 py-3 text-sm font-bold text-error hover:bg-white/5 transition-colors flex items-center gap-2 border-t border-white/5"

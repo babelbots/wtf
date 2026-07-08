@@ -63,9 +63,12 @@ export async function getUserGroups(userId: string) {
   
   const groups: any[] = [];
   for (const groupDoc of snapshot.docs) {
+    const groupData = groupDoc.data();
+    if (groupData.deletedAt) continue;
+
     const memberSnap = await getDoc(doc(db, 'groups', groupDoc.id, 'members', userId));
     if (memberSnap.exists()) {
-      groups.push({ id: groupDoc.id, ...groupDoc.data(), userRole: memberSnap.data().role });
+      groups.push({ id: groupDoc.id, ...groupData, userRole: memberSnap.data().role });
     }
   }
   return groups;
@@ -87,17 +90,25 @@ export async function leaveGroup(groupId: string, userId: string) {
 
 export async function deleteGroup(groupId: string) {
   const groupRef = doc(db, 'groups', groupId);
-  const [membersSnap, wodsSnap, resultsSnap] = await Promise.all([
-    getDocs(collection(db, 'groups', groupId, 'members')),
-    getDocs(collection(db, 'groups', groupId, 'wods')),
-    getDocs(collection(db, 'groups', groupId, 'results'))
-  ]);
+  try {
+    const [membersSnap, wodsSnap, resultsSnap] = await Promise.all([
+      getDocs(collection(db, 'groups', groupId, 'members')),
+      getDocs(collection(db, 'groups', groupId, 'wods')),
+      getDocs(collection(db, 'groups', groupId, 'results'))
+    ]);
 
-  const batch = writeBatch(db);
-  membersSnap.docs.forEach(memberDoc => batch.delete(memberDoc.ref));
-  wodsSnap.docs.forEach(wodDoc => batch.delete(wodDoc.ref));
-  resultsSnap.docs.forEach(resultDoc => batch.delete(resultDoc.ref));
-  batch.delete(groupRef);
+    const batch = writeBatch(db);
+    membersSnap.docs.forEach(memberDoc => batch.delete(memberDoc.ref));
+    wodsSnap.docs.forEach(wodDoc => batch.delete(wodDoc.ref));
+    resultsSnap.docs.forEach(resultDoc => batch.delete(resultDoc.ref));
+    batch.delete(groupRef);
 
-  await batch.commit();
+    await batch.commit();
+  } catch (error) {
+    console.warn('Hard delete failed; marking group as deleted instead.', error);
+    await updateDoc(groupRef, {
+      deletedAt: new Date().toISOString(),
+      memberCount: 0
+    });
+  }
 }
