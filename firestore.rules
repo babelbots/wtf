@@ -52,7 +52,12 @@ service cloud.firestore {
       match /results/{resultId} {
         allow read: if isAuthenticated();
         allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
-        allow update, delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isGroupAdmin(groupId));
+        allow update: if isAuthenticated() && (
+          request.auth.uid == resource.data.userId || 
+          isGroupAdmin(groupId) ||
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+        );
+        allow delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isGroupAdmin(groupId));
       }
     }
   }
