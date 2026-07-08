@@ -84,7 +84,9 @@ export async function getUserGroups(userId: string) {
   return groups.sort((a, b) => {
     const timeA = a.joinedAt ? new Date(a.joinedAt).getTime() : 0;
     const timeB = b.joinedAt ? new Date(b.joinedAt).getTime() : 0;
-    return timeB - timeA;
+    const safeTimeA = isNaN(timeA) ? 0 : timeA;
+    const safeTimeB = isNaN(timeB) ? 0 : timeB;
+    return safeTimeB - safeTimeA;
   });
 }
 
