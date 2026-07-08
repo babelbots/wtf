@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Camera, Dumbbell, Trophy, ArrowLeft, X, MoreVertical, LogOut, Trash2, Send } from 'lucide-react';
 import { TopBar } from '../components/layout/TopBar';
 import { leaveGroup, deleteGroup } from '../lib/db';
-import { collection, query, orderBy, getDocs, limit, onSnapshot, doc, getDoc, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, limit, onSnapshot, doc, getDoc, addDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { resizeImage } from '../lib/imageUtils';
@@ -365,16 +365,10 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
       if (!result) return;
       
       const currentReactions = result.reactions || {};
-      const newReactions = { ...currentReactions };
+      const hasReacted = currentReactions[user.uid] === reactionType;
       
-      if (newReactions[user.uid] === reactionType) {
-        delete newReactions[user.uid];
-      } else {
-        newReactions[user.uid] = reactionType;
-      }
-
       await updateDoc(doc(db, 'groups', groupId, 'results', resultId), {
-        reactions: newReactions
+        [`reactions.${user.uid}`]: hasReacted ? deleteField() : reactionType
       });
     } catch (e) {
       console.error('Error updating reaction', e);
