@@ -11,6 +11,11 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    function isGroupAdmin(groupId) {
+      return isAuthenticated()
+        && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == 'admin';
+    }
+
     // Users collection
     match /users/{userId} {
       allow read, write: if isOwner(userId);
@@ -22,7 +27,7 @@ service cloud.firestore {
       allow create: if isAuthenticated();
       // Allow updates to member count, etc., temporarily open for MVP or if admin
       allow update: if isAuthenticated();
-      allow delete: if false;
+      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.ownerId || isGroupAdmin(groupId));
 
       // Group Members
       match /members/{memberId} {
@@ -34,14 +39,14 @@ service cloud.firestore {
       match /wods/{wodId} {
         allow read: if isAuthenticated();
         allow create: if isAuthenticated();
-        allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.authorId;
+        allow update, delete: if isAuthenticated() && (request.auth.uid == resource.data.authorId || isGroupAdmin(groupId));
       }
 
       // Group Results
       match /results/{resultId} {
         allow read: if isAuthenticated();
         allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
-        allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+        allow update, delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isGroupAdmin(groupId));
       }
     }
   }

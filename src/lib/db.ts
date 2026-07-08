@@ -1,4 +1,4 @@
-import { collection, addDoc, doc, setDoc, query, where, getDocs, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, query, where, getDocs, getDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 
 export async function createGroup(name: string, type: 'private' | 'official', ownerId: string) {
@@ -86,6 +86,18 @@ export async function leaveGroup(groupId: string, userId: string) {
 }
 
 export async function deleteGroup(groupId: string) {
-  const { deleteDoc } = await import('firebase/firestore');
-  await deleteDoc(doc(db, 'groups', groupId));
+  const groupRef = doc(db, 'groups', groupId);
+  const [membersSnap, wodsSnap, resultsSnap] = await Promise.all([
+    getDocs(collection(db, 'groups', groupId, 'members')),
+    getDocs(collection(db, 'groups', groupId, 'wods')),
+    getDocs(collection(db, 'groups', groupId, 'results'))
+  ]);
+
+  const batch = writeBatch(db);
+  membersSnap.docs.forEach(memberDoc => batch.delete(memberDoc.ref));
+  wodsSnap.docs.forEach(wodDoc => batch.delete(wodDoc.ref));
+  resultsSnap.docs.forEach(resultDoc => batch.delete(resultDoc.ref));
+  batch.delete(groupRef);
+
+  await batch.commit();
 }
