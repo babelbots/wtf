@@ -103,6 +103,7 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
             unsubscribe();
           };
         }
+        setLoading(false);
         return () => unsubscribeGroup();
       } catch (error) {
         console.error("Failed to load WOD", error);
