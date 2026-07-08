@@ -41,6 +41,7 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [chatText, setChatText] = useState('');
   const [chatSending, setChatSending] = useState(false);
+  const [chatError, setChatError] = useState('');
 
   // Create WOD State
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -64,10 +65,12 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
       if (!groupId) return;
       try {
         // Load Group details
-        const groupSnap = await getDoc(doc(db, 'groups', groupId));
-        if (groupSnap.exists()) {
-          setGroup({ id: groupSnap.id, ...groupSnap.data() });
-        }
+        const groupRef = doc(db, 'groups', groupId);
+        const unsubscribeGroup = onSnapshot(groupRef, (snap) => {
+          if (snap.exists()) {
+            setGroup({ id: snap.id, ...snap.data() });
+          }
+        });
 
         if (user) {
           const memberSnap = await getDoc(doc(db, 'groups', groupId, 'members', user.uid));
@@ -94,18 +97,13 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
             setResults(fetchedResults);
           });
 
-          const messagesRef = collection(db, 'groups', groupId, 'wods', currentWod.id, 'messages');
-          const messagesQuery = query(messagesRef, orderBy('createdAt', 'asc'));
-          const unsubscribeMessages = onSnapshot(messagesQuery, (snap) => {
-            setChatMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-          });
-          
           setLoading(false);
           return () => {
+            unsubscribeGroup();
             unsubscribe();
-            unsubscribeMessages();
           };
         }
+        return () => unsubscribeGroup();
       } catch (error) {
         console.error("Failed to load WOD", error);
       }
@@ -118,6 +116,16 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
   }, [groupId, user]);
 
   const myResult = user ? results.find((result) => result.userId === user.uid) : null;
+
+  useEffect(() => {
+    if (!group || !wod) {
+      setChatMessages([]);
+      return;
+    }
+
+    const messages = group.wodChats?.[wod.id] || [];
+    setChatMessages([...messages].sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || '')));
+  }, [group, wod?.id]);
 
   useEffect(() => {
     if (!myResult) {
@@ -325,17 +333,25 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
   const handleSendChatMessage = async () => {
     if (!user || !wod || !chatText.trim()) return;
     setChatSending(true);
+    setChatError('');
     try {
-      await addDoc(collection(db, 'groups', groupId, 'wods', wod.id, 'messages'), {
+      const message = {
+        id: `${user.uid}-${Date.now()}`,
         text: chatText.trim(),
         userId: user.uid,
         userName: user.displayName || 'Anonymous',
         userAvatar: user.photoURL || '',
         createdAt: new Date().toISOString()
+      };
+      const nextMessages = [...chatMessages, message];
+
+      await updateDoc(doc(db, 'groups', groupId), {
+        [`wodChats.${wod.id}`]: nextMessages
       });
       setChatText('');
     } catch (error) {
       console.error(error);
+      setChatError(error instanceof Error ? error.message : 'Could not send this message.');
     } finally {
       setChatSending(false);
     }
@@ -878,6 +894,11 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                     <Send size={18} />
                   </button>
                 </div>
+                {chatError && (
+                  <div className="bg-error/10 border border-error/20 rounded-xl px-4 py-3 text-error text-sm font-bold">
+                    {chatError}
+                  </div>
+                )}
               </div>
             </div>
           )}
