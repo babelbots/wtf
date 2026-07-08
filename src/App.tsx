@@ -45,7 +45,6 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-background text-on-background font-sans selection:bg-secondary selection:text-on-secondary">
       {renderScreen()}
-      <BottomNav currentScreen={currentScreen} onNavigate={setCurrentScreen} />
     </div>
   );
 }
