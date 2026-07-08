@@ -87,9 +87,8 @@ export function WodScreen({ groupId, onBack, onNavigateToRanking }: WodScreenPro
         if (!snapshot.empty) {
           const currentWod = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
           const today = new Date().toISOString().split('T')[0];
-          
           // Only show the WOD if it was posted today. Otherwise, leave it empty for a new one.
-          if (currentWod.date === today || (currentWod.createdAt && currentWod.createdAt.startsWith(today))) {
+          if (currentWod.date === today || (typeof currentWod.createdAt === 'string' && currentWod.createdAt.startsWith(today))) {
             setWod(currentWod);
 
             // Subscribe to results for this WOD
