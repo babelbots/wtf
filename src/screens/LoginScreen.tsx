@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Mail, Lock, Dumbbell } from 'lucide-react';
-import { loginWithGoogle, loginWithEmail, loginWithApple } from '../lib/firebase';
+import { loginWithGoogle, loginWithEmail, registerWithEmail, loginWithApple } from '../lib/firebase';
 
 export function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [bgIndex, setBgIndex] = useState(0);
+  const [isLogin, setIsLogin] = useState(true);
 
   const backgrounds = [
     '/bg_crossfit_1_1783526187355.jpg',
@@ -14,12 +14,7 @@ export function LoginScreen() {
     '/bg_crossfit_3_1783526207597.jpg'
   ];
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setBgIndex((prev) => (prev + 1) % backgrounds.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  const bgIndex = new Date().getDay() % backgrounds.length;
 
   const handleGoogleLogin = async () => {
     try {
@@ -30,13 +25,17 @@ export function LoginScreen() {
     }
   };
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setError(null);
-      await loginWithEmail(email, password);
+      if (isLogin) {
+        await loginWithEmail(email, password);
+      } else {
+        await registerWithEmail(email, password);
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to login with email.');
+      setError(err.message || 'Failed to authenticate.');
     }
   };
 
@@ -69,8 +68,8 @@ export function LoginScreen() {
         
         {/* Brand Header */}
         <header className="text-center mb-10 animate-in slide-in-from-top duration-700">
-          <div className="inline-flex items-center justify-center mb-6 shadow-glow">
-            <img src="/logo_wtf_1783526217144.jpg" alt="WTF Logo" className="w-24 h-24 rounded-full border-2 border-secondary object-cover" />
+          <div className="inline-flex items-center justify-center p-4 bg-secondary-container rounded-full mb-6 shadow-glow">
+            <Dumbbell className="text-secondary w-8 h-8" strokeWidth={2.5} />
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold text-on-background mb-2 tracking-tight">
             WOD the FAQ
@@ -80,9 +79,9 @@ export function LoginScreen() {
           </p>
         </header>
 
-        {/* Login Card */}
+        {/* Login/Register Card */}
         <section className="w-full glass-card rounded-2xl p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-500 delay-150">
-          <form className="space-y-6" onSubmit={handleEmailLogin}>
+          <form className="space-y-6" onSubmit={handleEmailAuth}>
             
             {/* Email Input */}
             <div className="space-y-2">
@@ -132,7 +131,7 @@ export function LoginScreen() {
               type="submit"
               className="w-full h-14 bg-secondary text-on-secondary font-bold text-lg rounded-full shadow-glow hover:scale-[1.02] active:scale-95 transition-all duration-200 uppercase tracking-wide"
             >
-              Log In
+              {isLogin ? 'Log In' : 'Sign Up'}
             </button>
           </form>
 
@@ -168,7 +167,13 @@ export function LoginScreen() {
         {/* Footer */}
         <footer className="mt-8 text-center">
           <p className="text-sm text-on-surface-variant font-medium">
-            New to the pain? <a href="#" className="text-secondary font-bold hover:underline">Join the box</a>
+            {isLogin ? "New to the pain? " : "Already suffering? "}
+            <button 
+              onClick={() => setIsLogin(!isLogin)} 
+              className="text-secondary font-bold hover:underline"
+            >
+              {isLogin ? "Join the box" : "Log in"}
+            </button>
           </p>
           <div className="mt-6 flex gap-6 justify-center opacity-60">
             <a href="#" className="text-xs font-bold hover:opacity-100 transition-opacity">Privacy</a>
