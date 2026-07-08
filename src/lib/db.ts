@@ -33,6 +33,10 @@ export async function joinGroup(joinCode: string, userId: string) {
   }
 
   const groupDoc = querySnapshot.docs[0];
+  if (groupDoc.data().deletedAt) {
+    throw new Error("Invalid join code.");
+  }
+
   const groupId = groupDoc.id;
 
   // Check if already a member
@@ -90,6 +94,11 @@ export async function leaveGroup(groupId: string, userId: string) {
 
 export async function deleteGroup(groupId: string) {
   const groupRef = doc(db, 'groups', groupId);
+  await updateDoc(groupRef, {
+    deletedAt: new Date().toISOString(),
+    memberCount: 0
+  });
+
   try {
     const [membersSnap, wodsSnap, resultsSnap] = await Promise.all([
       getDocs(collection(db, 'groups', groupId, 'members')),
@@ -105,10 +114,6 @@ export async function deleteGroup(groupId: string) {
 
     await batch.commit();
   } catch (error) {
-    console.warn('Hard delete failed; marking group as deleted instead.', error);
-    await updateDoc(groupRef, {
-      deletedAt: new Date().toISOString(),
-      memberCount: 0
-    });
+    console.warn('Group was hidden, but hard delete cleanup failed.', error);
   }
 }
