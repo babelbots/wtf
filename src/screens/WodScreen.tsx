@@ -49,6 +49,7 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionError, setTranscriptionError] = useState('');
   const [newWodCreating, setNewWodCreating] = useState(false);
+  const [newWodSaveError, setNewWodSaveError] = useState('');
   const [isEditingWod, setIsEditingWod] = useState(false);
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
@@ -156,6 +157,7 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
     e.preventDefault();
     if (!user) return;
     setNewWodCreating(true);
+    setNewWodSaveError('');
     try {
       const wodsRef = collection(db, 'groups', groupId, 'wods');
       const wodData = {
@@ -171,8 +173,9 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
       };
       
       if (isEditingWod && wod) {
-        await updateDoc(doc(db, 'groups', groupId, 'wods', wod.id), wodData);
-        setWod({ ...wod, ...wodData });
+        const updatedWodData = { ...wodData, authorId: user.uid };
+        await updateDoc(doc(db, 'groups', groupId, 'wods', wod.id), updatedWodData);
+        setWod({ ...wod, ...updatedWodData });
       } else {
         const docRef = await addDoc(wodsRef, {
           ...wodData,
@@ -191,13 +194,15 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
           setResults(fetchedResults);
         });
       }
+      setShowCreateForm(false);
+      setIsEditingWod(false);
+      setNewWodTimeCap('');
     } catch (err) {
       console.error(err);
+      setNewWodSaveError(err instanceof Error ? err.message : 'Could not save this WOD.');
+    } finally {
+      setNewWodCreating(false);
     }
-    setNewWodCreating(false);
-    setShowCreateForm(false);
-    setIsEditingWod(false);
-    setNewWodTimeCap('');
   };
 
   const handleTimeBlur = () => {
@@ -369,12 +374,17 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                    </div>
                    {isTranscribing && (
                      <div className="bg-secondary/10 border border-secondary/20 rounded-xl px-4 py-3 text-secondary text-xs font-bold uppercase tracking-wider">
-                       Gemini is reading the photo and filling the workout fields...
+                       AI is reading the photo and filling the workout fields...
                      </div>
                    )}
                    {transcriptionError && (
                      <div className="bg-error/10 border border-error/20 rounded-xl px-4 py-3 text-error text-sm font-bold">
                        {transcriptionError}
+                     </div>
+                   )}
+                   {newWodSaveError && (
+                     <div className="bg-error/10 border border-error/20 rounded-xl px-4 py-3 text-error text-sm font-bold">
+                       {newWodSaveError}
                      </div>
                    )}
                    <div className="space-y-2">
