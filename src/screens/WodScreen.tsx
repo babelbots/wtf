@@ -555,7 +555,7 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                 <div className="inline-block bg-secondary/20 text-secondary text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-widest">
                   {wod.date || 'WOD of the Day'}
                 </div>
-                {(group?.type === 'private' || userRole === 'admin') && (
+                {(group?.type === 'official' && userRole === 'admin') && (
                   <button onClick={handleEditClick} className="text-on-surface-variant hover:text-on-surface text-xs font-bold uppercase tracking-wider">
                     Edit
                   </button>
