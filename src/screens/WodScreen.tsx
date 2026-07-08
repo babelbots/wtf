@@ -34,6 +34,8 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
   const [weightUnit, setWeightUnit] = useState<'KG'|'LB'>('KG');
   const [timeOrReps, setTimeOrReps] = useState('');
   const [notes, setNotes] = useState('');
+  const [resultImage, setResultImage] = useState<string | null>(null);
+  const [resultSaveError, setResultSaveError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<any[]>([]);
 
@@ -102,6 +104,43 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
       unsub.then(fn => fn && fn());
     };
   }, [groupId, user]);
+
+  const myResult = user ? results.find((result) => result.userId === user.uid) : null;
+
+  useEffect(() => {
+    if (!myResult) {
+      setActiveTab(null);
+      setIsCapped(false);
+      setWeight('');
+      setWeightUnit('KG');
+      setTimeOrReps('');
+      setNotes('');
+      setResultImage(null);
+      return;
+    }
+
+    setActiveTab(myResult.scale === 'rx' ? 'rx' : null);
+    setIsCapped(Boolean(myResult.isCapped));
+    setTimeOrReps(myResult.timeOrReps || '');
+    setNotes(myResult.notes || '');
+    setResultImage(myResult.imageUrl || null);
+
+    if (myResult.weight === 'RX') {
+      setWeight('');
+      setWeightUnit('KG');
+      return;
+    }
+
+    const weightMatch = typeof myResult.weight === 'string'
+      ? myResult.weight.match(/^(.+?)\s+(KG|LB)$/)
+      : null;
+    if (weightMatch) {
+      setWeight(weightMatch[1]);
+      setWeightUnit(weightMatch[2] as 'KG' | 'LB');
+    } else {
+      setWeight(myResult.weight || '');
+    }
+  }, [myResult?.id, wod?.id]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -216,12 +255,26 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
     }
   };
 
+  const handleResultImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setResultSaveError('');
+      const base64 = await resizeImage(file);
+      setResultImage(base64);
+    } catch (error) {
+      console.error(error);
+      setResultSaveError('Could not attach this photo.');
+    }
+  };
+
   const handleSubmitResult = async () => {
     if (!user || !wod || !timeOrReps) return;
     setSubmitting(true);
+    setResultSaveError('');
     try {
       const resultsRef = collection(db, 'groups', groupId, 'results');
-      await addDoc(resultsRef, {
+      const resultData = {
         wodId: wod.id,
         userId: user.uid,
         userName: user.displayName || 'Anonymous',
@@ -231,16 +284,30 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
         scale: activeTab === 'rx' ? 'rx' : 'scaled',
         isCapped,
         notes,
-        loggedAt: new Date().toISOString()
-      });
-      // Optionally reset form or show success
-      setWeight('');
-      setTimeOrReps('');
-      setNotes('');
+        imageUrl: resultImage || null
+      };
+
+      if (myResult) {
+        await updateDoc(doc(db, 'groups', groupId, 'results', myResult.id), {
+          ...resultData,
+          updatedAt: new Date().toISOString()
+        });
+      } else {
+        await addDoc(resultsRef, {
+          ...resultData,
+          loggedAt: new Date().toISOString()
+        });
+      }
     } catch (e) {
       console.error(e);
+      setResultSaveError(e instanceof Error ? e.message : 'Could not save this result.');
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
+  };
+
+  const handleEditOwnResult = () => {
+    document.getElementById('result-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
 
@@ -485,7 +552,7 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
             </section>
 
             {/* Log Performance */}
-            <section className="space-y-4">
+            <section id="result-form" className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-on-surface">Log<br/>Performance</h3>
                 <div className="flex bg-surface-container-high rounded-full p-1 border border-white/5">
@@ -550,16 +617,35 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                     className="w-full bg-surface-container-low rounded-xl border border-transparent focus:border-secondary px-4 py-3 text-sm font-medium text-on-surface outline-none transition-all resize-none h-20" 
                   />
                 </div>
+                {resultImage && (
+                  <div className="rounded-xl overflow-hidden border border-white/10 relative h-32 bg-surface-container-low">
+                    <img src={resultImage} alt="Result proof" className="w-full h-full object-cover cursor-pointer" onClick={() => setFullScreenImage(resultImage)} />
+                    <button type="button" onClick={() => setResultImage(null)} className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 hover:bg-black">
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+                {resultSaveError && (
+                  <div className="bg-error/10 border border-error/20 rounded-xl px-4 py-3 text-error text-sm font-bold">
+                    {resultSaveError}
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-4 pt-2">
                 <button disabled={submitting || !timeOrReps} onClick={handleSubmitResult} className="flex-1 bg-secondary text-on-secondary font-bold text-lg rounded-full shadow-glow hover:scale-[1.02] active:scale-95 transition-all duration-200 uppercase tracking-wide h-14 disabled:opacity-50">
-                  {submitting ? 'Logging...' : 'Submit Result'}
+                  {submitting ? 'Saving...' : (myResult ? 'Save Changes' : 'Submit Result')}
                 </button>
-                <button className="w-14 h-14 rounded-full border border-outline-variant text-on-surface-variant flex items-center justify-center hover:bg-white/5 active:scale-95 transition-all">
+                <label className={`w-14 h-14 rounded-full border flex items-center justify-center active:scale-95 transition-all cursor-pointer ${resultImage ? 'border-secondary text-secondary bg-secondary/10' : 'border-outline-variant text-on-surface-variant hover:bg-white/5'}`}>
                   <Camera size={20} />
-                </button>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleResultImageUpload} />
+                </label>
               </div>
+              {myResult && (
+                <p className="text-xs text-on-surface-variant text-center font-bold uppercase tracking-wider">
+                  You already logged this WOD. Saving will update your result.
+                </p>
+              )}
             </section>
           </>
         )}
@@ -655,9 +741,19 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                         )}
                         <span className={`font-bold ${result.userId === user?.uid ? 'text-secondary' : 'text-on-surface'}`}>{result.userName}</span>
                       </div>
+                      {result.imageUrl && (
+                        <button type="button" onClick={() => setFullScreenImage(result.imageUrl)} className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 shrink-0">
+                          <img src={result.imageUrl} alt="Result proof" className="w-full h-full object-cover" />
+                        </button>
+                      )}
                       <div className="text-right">
                         <div className="font-bold text-lg text-on-surface">{result.timeOrReps}</div>
                         <div className="text-[10px] font-bold text-secondary uppercase tracking-widest">{result.scale} {result.isCapped && '(Capped)'}</div>
+                        {result.userId === user?.uid && (
+                          <button type="button" onClick={handleEditOwnResult} className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest hover:text-on-surface">
+                            Edit
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))
