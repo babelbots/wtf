@@ -86,23 +86,32 @@ export function WodScreen({ groupId, onBack, onNavigateToRanking }: WodScreenPro
         const snapshot = await getDocs(q);
         if (!snapshot.empty) {
           const currentWod = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
-          setWod(currentWod);
+          const today = new Date().toISOString().split('T')[0];
+          
+          // Only show the WOD if it was posted today. Otherwise, leave it empty for a new one.
+          if (currentWod.date === today || (currentWod.createdAt && currentWod.createdAt.startsWith(today))) {
+            setWod(currentWod);
 
-          // Subscribe to results for this WOD
-          const resultsRef = collection(db, 'groups', groupId, 'results');
-          const resultsQuery = query(resultsRef, orderBy('loggedAt', 'desc'));
-          const unsubscribe = onSnapshot(resultsQuery, (snap) => {
-            const fetchedResults = snap.docs
-              .map(d => ({ id: d.id, ...d.data() }))
-              .filter((r: any) => r.wodId === currentWod.id);
-            setResults(fetchedResults);
-          });
+            // Subscribe to results for this WOD
+            const resultsRef = collection(db, 'groups', groupId, 'results');
+            const resultsQuery = query(resultsRef, orderBy('loggedAt', 'desc'));
+            const unsubscribe = onSnapshot(resultsQuery, (snap) => {
+              const fetchedResults = snap.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .filter((r: any) => r.wodId === currentWod.id);
+              setResults(fetchedResults);
+            });
 
-          setLoading(false);
-          return () => {
-            unsubscribeGroup();
-            unsubscribe();
-          };
+            setLoading(false);
+            return () => {
+              unsubscribeGroup();
+              unsubscribe();
+            };
+          } else {
+            // It's a new day! No WOD posted yet.
+            setWod(null);
+            setResults([]);
+          }
         }
         setLoading(false);
         return () => unsubscribeGroup();
