@@ -382,13 +382,13 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
   };
 
   const calculateScore = (result: any) => {
-    let score = result.scale === 'rx' ? 50 : 10;
+    let score = result.scale === 'rx' ? 15 : 10;
     const reactions = result.reactions || {};
     Object.values(reactions).forEach((reaction) => {
-      if (reaction === 'fire') score += 10;
-      if (reaction === 'clap') score += 5;
-      if (reaction === 'liar') score -= 15;
-      if (reaction === 'yawn') score -= 5;
+      if (reaction === 'fire') score += 5;
+      if (reaction === 'clap') score += 2;
+      if (reaction === 'liar') score -= 5;
+      if (reaction === 'yawn') score -= 2;
     });
     return score;
   };
@@ -938,10 +938,10 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                           {/* Reactions UI */}
                           <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
                             {[
-                              { type: 'fire', emoji: '🔥', pts: '+10' },
-                              { type: 'clap', emoji: '👏', pts: '+5' },
-                              { type: 'yawn', emoji: '🥱', pts: '-5' },
-                              { type: 'liar', emoji: '🤥', pts: '-15' }
+                              { type: 'fire', emoji: '🔥', pts: '+5' },
+                              { type: 'clap', emoji: '👏', pts: '+2' },
+                              { type: 'yawn', emoji: '🥱', pts: '-2' },
+                              { type: 'liar', emoji: '🤥', pts: '-5' }
                             ].map((reaction) => {
                               const reactionsObj = item.reactions || {};
                               const count = Object.values(reactionsObj).filter(v => v === reaction.type).length;
