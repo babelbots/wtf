@@ -47,13 +47,19 @@ export function TopBar({ title = "WOD the FAQ", showSettings = false, onProfile 
       <div className="flex items-center gap-2 relative">
         {user && (
           <button 
-            onClick={() => logout()}
-            className="text-on-surface-variant hover:text-error hover:bg-white/5 transition-colors p-2 rounded-full active:scale-95 flex items-center gap-2"
+            onClick={() => {
+              if (onProfile) {
+                onProfile();
+              }
+            }}
+            className="text-on-surface-variant hover:text-primary-light hover:bg-white/5 transition-colors p-2 rounded-full active:scale-95 flex items-center gap-2"
           >
             {user.photoURL ? (
               <img src={user.photoURL} alt="Avatar" className="w-8 h-8 rounded-full border border-outline-variant" />
             ) : (
-              <LogOut size={20} />
+              <div className="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center font-bold text-xs">
+                {user.displayName?.substring(0, 2).toUpperCase() || 'U'}
+              </div>
             )}
           </button>
         )}

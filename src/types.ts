@@ -1,4 +1,4 @@
-export type Screen = 'login' | 'wod' | 'home' | 'create-group' | 'join-group' | 'profile';
+export type Screen = 'login' | 'wod' | 'home' | 'create-group' | 'join-group' | 'profile' | 'season-ranking';
 
 export interface User {
   id: string;

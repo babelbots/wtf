@@ -18,9 +18,10 @@ const MOCK_LEADERBOARD = [
 interface WodScreenProps {
   groupId: string;
   onBack: () => void;
+  onNavigateToRanking: () => void;
 }
 
-export function WodScreen({ groupId, onBack }: WodScreenProps) {
+export function WodScreen({ groupId, onBack, onNavigateToRanking }: WodScreenProps) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'rx' | null>(null);
   const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<'leaderboard' | 'community'>('leaderboard');
@@ -318,6 +319,21 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
           ...resultData,
           loggedAt: new Date().toISOString()
         });
+        
+        // Add points for logging a WOD
+        try {
+          const memberRef = doc(db, 'groups', groupId, 'members', user.uid);
+          const memberSnap = await getDoc(memberRef);
+          if (memberSnap.exists()) {
+            const currentPoints = memberSnap.data().points || 100;
+            await updateDoc(memberRef, {
+              points: currentPoints + 10,
+              lastWodDate: new Date().toISOString()
+            });
+          }
+        } catch (err) {
+          console.error("Failed to add points", err);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -482,9 +498,14 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                 </div>
               )}
             </div>
-            <div>
+            <div onClick={onNavigateToRanking} className="cursor-pointer hover:opacity-80 transition-opacity">
               <h2 className="text-xl font-bold text-on-surface">{group ? group.name : 'Loading...'}</h2>
-              <p className="text-xs text-on-surface-variant font-medium">{group ? `${group.memberCount || 1} Members` : ''}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-xs text-on-surface-variant font-medium">{group ? `${group.memberCount || 1} Members` : ''}</p>
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-secondary/20 text-secondary px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Trophy size={10} /> View Ranking
+                </span>
+              </div>
             </div>
           </div>
         </section>

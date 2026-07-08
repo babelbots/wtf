@@ -6,6 +6,7 @@ import { HomeScreen } from './screens/HomeScreen';
 import { CreateGroupScreen } from './screens/CreateGroupScreen';
 import { JoinGroupScreen } from './screens/JoinGroupScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
+import { SeasonRankingScreen } from './screens/SeasonRankingScreen';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 function AppContent() {
@@ -24,7 +25,9 @@ function AppContent() {
   const renderScreen = () => {
     switch (currentScreen) {
       case 'wod':
-        return <WodScreen groupId={activeGroupId!} onBack={() => setCurrentScreen('home')} />;
+        return <WodScreen groupId={activeGroupId!} onBack={() => setCurrentScreen('home')} onNavigateToRanking={() => setCurrentScreen('season-ranking')} />;
+      case 'season-ranking':
+        return <SeasonRankingScreen groupId={activeGroupId!} onBack={() => setCurrentScreen('wod')} />;
       case 'create-group':
         return <CreateGroupScreen onBack={() => setCurrentScreen('home')} onCreate={() => setCurrentScreen('home')} />;
       case 'join-group':

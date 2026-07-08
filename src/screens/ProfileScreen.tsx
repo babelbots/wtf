@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { User, Calendar, Target, Award, ArrowLeft, Clock } from 'lucide-react';
+import { User, Calendar, Target, Award, ArrowLeft, Clock, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserResultsHistory } from '../lib/db';
+import { logout } from '../lib/firebase';
 
 interface ProfileScreenProps {
   onBack: () => void;
@@ -44,9 +45,16 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
         >
           <ArrowLeft size={24} />
         </button>
-        <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-on-surface">
+        <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-on-surface flex-1">
           My Profile
         </h1>
+        <button 
+          onClick={() => logout()}
+          className="text-error hover:bg-error/10 transition-colors p-2 rounded-full active:scale-95 flex items-center gap-2 text-sm font-bold"
+        >
+          <LogOut size={20} />
+          <span className="hidden sm:inline">Log Out</span>
+        </button>
       </header>
 
       <main className="relative z-10 max-w-3xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-8">
