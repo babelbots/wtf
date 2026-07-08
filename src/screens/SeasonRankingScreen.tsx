@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Trophy, Flame, Ghost, Calendar, XCircle, TrendingUp, Settings, Shield } from 'lucide-react';
+import { ArrowLeft, Trophy, Flame, Ghost, Calendar, XCircle, TrendingUp, Settings, Shield, Camera, Image as ImageIcon } from 'lucide-react';
 import { doc, onSnapshot, collection, query, orderBy, updateDoc, getDoc } from 'firebase/firestore';
-import { promoteToAdmin, updateSeasonDates } from '../lib/db';
+import { promoteToAdmin, updateGroupSettings } from '../lib/db';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { resizeImage } from '../lib/imageUtils';
 
 interface SeasonRankingScreenProps {
   groupId: string;
@@ -17,6 +18,8 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
   const [isAdmin, setIsAdmin] = useState(false);
   const [seasonStart, setSeasonStart] = useState('');
   const [seasonEnd, setSeasonEnd] = useState('');
+  const [groupName, setGroupName] = useState('');
+  const [groupImage, setGroupImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!groupId) return;
@@ -26,6 +29,8 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
         const data = snap.data();
         if (data.seasonStartDate) setSeasonStart(data.seasonStartDate);
         if (data.seasonEndDate) setSeasonEnd(data.seasonEndDate);
+        if (data.name) setGroupName(data.name);
+        if (data.imageUrl) setGroupImage(data.imageUrl);
       }
     });
     return () => unsub();
@@ -106,14 +111,33 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
     }
   };
 
-  const handleUpdateSeason = async () => {
-    if (!seasonStart || !seasonEnd) return;
+  const handleUpdateSettings = async () => {
     try {
-      await updateSeasonDates(groupId, seasonStart, seasonEnd);
-      alert('Season dates updated!');
+      await updateGroupSettings(groupId, groupName, groupImage, seasonStart, seasonEnd);
+      alert('Group settings updated!');
     } catch (e) {
       console.error(e);
-      alert('Failed to update season dates');
+      alert('Failed to update settings');
+    }
+  };
+
+  const handleSetCurrentMonth = () => {
+    const date = new Date();
+    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).toLocaleDateString('en-CA');
+    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).toLocaleDateString('en-CA');
+    setSeasonStart(firstDay);
+    setSeasonEnd(lastDay);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const base64 = await resizeImage(file);
+      setGroupImage(base64);
+    } catch (error) {
+      console.error(error);
+      alert('Could not attach this photo.');
     }
   };
 
@@ -147,9 +171,39 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
             <h2 className="text-xl font-bold text-secondary mb-4 flex items-center gap-2">
               <Settings /> Admin Controls
             </h2>
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-6">
+              
               <div className="flex flex-col md:flex-row gap-4 items-end">
                 <div className="flex-1 w-full">
+                  <label className="block text-sm font-bold text-primary-light mb-1">Group Name</label>
+                  <input 
+                    type="text" 
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    className="w-full bg-surface-container rounded-xl p-3 text-on-surface border border-white/10"
+                  />
+                </div>
+                <div className="w-full md:w-auto">
+                  <label className="block text-sm font-bold text-primary-light mb-1">Group Image</label>
+                  <label className="bg-surface-container hover:bg-surface-container-high transition-colors border border-white/10 rounded-xl p-3 flex items-center justify-center gap-2 cursor-pointer h-12">
+                    <Camera size={18} className="text-secondary" />
+                    <span className="text-sm font-bold text-on-surface">Upload</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                  </label>
+                </div>
+              </div>
+
+              {groupImage && (
+                <div className="relative w-full h-32 rounded-xl overflow-hidden border border-white/10">
+                  <img src={groupImage} alt="Group" className="w-full h-full object-cover" />
+                  <button onClick={() => setGroupImage(null)} className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 hover:bg-black">
+                    <XCircle size={20} />
+                  </button>
+                </div>
+              )}
+
+              <div className="flex flex-col md:flex-row gap-4 items-end">
+                <div className="flex-1 w-full relative">
                   <label className="block text-sm font-bold text-primary-light mb-1">Season Start</label>
                   <input 
                     type="date" 
@@ -158,7 +212,7 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
                     className="w-full bg-surface-container rounded-xl p-3 text-on-surface border border-white/10"
                   />
                 </div>
-                <div className="flex-1 w-full">
+                <div className="flex-1 w-full relative">
                   <label className="block text-sm font-bold text-primary-light mb-1">Season End</label>
                   <input 
                     type="date" 
@@ -167,12 +221,20 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
                     className="w-full bg-surface-container rounded-xl p-3 text-on-surface border border-white/10"
                   />
                 </div>
-                <button 
-                  onClick={handleUpdateSeason}
-                  className="bg-secondary text-on-secondary px-6 py-3 rounded-xl font-bold hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
-                >
-                  Save Dates
-                </button>
+                <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
+                  <button 
+                    onClick={handleSetCurrentMonth}
+                    className="flex-1 md:flex-none bg-surface-container-high text-on-surface px-4 py-3 rounded-xl font-bold hover:bg-white/10 active:scale-95 transition-all whitespace-nowrap text-sm border border-white/5"
+                  >
+                    Current Month
+                  </button>
+                  <button 
+                    onClick={handleUpdateSettings}
+                    className="flex-1 md:flex-none bg-secondary text-on-secondary px-6 py-3 rounded-xl font-bold hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
+                  >
+                    Save Settings
+                  </button>
+                </div>
               </div>
             </div>
           </section>

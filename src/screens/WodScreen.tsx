@@ -489,9 +489,15 @@ export function WodScreen({ groupId, onBack, onNavigateToRanking }: WodScreenPro
         <section className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="w-14 h-14 rounded-full border-2 border-secondary overflow-hidden bg-surface-container flex items-center justify-center">
-                <Dumbbell className="text-secondary" size={24} />
-              </div>
+              {group?.imageUrl ? (
+                <div className="w-14 h-14 rounded-full border-2 border-secondary overflow-hidden bg-surface-container flex items-center justify-center">
+                  <img src={group.imageUrl} alt="Group" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="w-14 h-14 rounded-full border-2 border-secondary overflow-hidden bg-surface-container flex items-center justify-center">
+                  <Dumbbell className="text-secondary" size={24} />
+                </div>
+              )}
               {group?.type === 'official' && (
                 <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-secondary text-on-secondary text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-widest border-2 border-background">
                   Box

@@ -162,7 +162,10 @@ export async function promoteToAdmin(groupId: string, targetUserId: string) {
   await updateDoc(memberRef, { role: 'admin' });
 }
 
-export async function updateSeasonDates(groupId: string, startDate: string, endDate: string) {
+export async function updateGroupSettings(groupId: string, name: string, imageUrl: string | null, startDate: string, endDate: string) {
   const groupRef = doc(db, 'groups', groupId);
-  await updateDoc(groupRef, { seasonStartDate: startDate, seasonEndDate: endDate });
+  const data: any = { seasonStartDate: startDate, seasonEndDate: endDate };
+  if (name) data.name = name;
+  if (imageUrl !== undefined) data.imageUrl = imageUrl;
+  await updateDoc(groupRef, data);
 }
