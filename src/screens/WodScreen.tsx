@@ -358,6 +358,44 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
     }
   };
 
+  const handleReaction = async (resultId: string, reactionType: 'fire' | 'clap' | 'liar' | 'yawn') => {
+    if (!user) return;
+    try {
+      const result = results.find(r => r.id === resultId);
+      if (!result) return;
+      
+      const currentReactions = result.reactions || {};
+      const newReactions = { ...currentReactions };
+      
+      if (newReactions[user.uid] === reactionType) {
+        delete newReactions[user.uid];
+      } else {
+        newReactions[user.uid] = reactionType;
+      }
+
+      await updateDoc(doc(db, 'groups', groupId, 'results', resultId), {
+        reactions: newReactions
+      });
+    } catch (e) {
+      console.error('Error updating reaction', e);
+    }
+  };
+
+  const calculateScore = (result: any) => {
+    let score = result.scale === 'rx' ? 50 : 10;
+    const reactions = result.reactions || {};
+    Object.values(reactions).forEach((reaction) => {
+      if (reaction === 'fire') score += 10;
+      if (reaction === 'clap') score += 5;
+      if (reaction === 'liar') score -= 15;
+      if (reaction === 'yawn') score -= 5;
+    });
+    return score;
+  };
+
+  const sortedLeaderboard = useMemo(() => {
+    return [...results].sort((a, b) => calculateScore(b) - calculateScore(a));
+  }, [results]);
 
   const combinedFeed = useMemo(() => {
     const feed: any[] = [];
@@ -734,53 +772,54 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
             <div className="mt-8 space-y-6">
               
               {/* Top 3 Podium */}
-              {results.length > 0 && (
+              {/* Top 3 Podium */}
+              {sortedLeaderboard.length > 0 && (
                 <div className="flex justify-center items-end gap-2 md:gap-6 pt-10 pb-6 px-2">
                   {/* 2nd Place */}
-                  {results[1] && (
+                  {sortedLeaderboard[1] && (
                     <div className="flex flex-col items-center flex-1 z-10">
                       <div className="relative mb-2">
-                        {results[1].userAvatar ? (
-                           <img src={results[1].userAvatar} alt="" className="w-16 h-16 rounded-full border-4 border-surface-container-high object-cover" />
+                        {sortedLeaderboard[1].userAvatar ? (
+                           <img src={sortedLeaderboard[1].userAvatar} alt="" className="w-16 h-16 rounded-full border-4 border-surface-container-high object-cover" />
                         ) : (
-                           <div className="w-16 h-16 rounded-full border-4 border-surface-container-high bg-surface-container flex items-center justify-center font-bold text-xs">{results[1].userName?.substring(0, 2).toUpperCase()}</div>
+                           <div className="w-16 h-16 rounded-full border-4 border-surface-container-high bg-surface-container flex items-center justify-center font-bold text-xs">{sortedLeaderboard[1].userName?.substring(0, 2).toUpperCase()}</div>
                         )}
                         <div className="absolute -top-3 -right-2 bg-slate-300 text-slate-800 text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-full border-2 border-background">#2</div>
                       </div>
-                      <div className="text-xs font-bold text-on-surface mb-2">{results[1].userName}</div>
+                      <div className="text-xs font-bold text-on-surface mb-2">{sortedLeaderboard[1].userName}</div>
                       <div className="w-full h-24 bg-surface-container-high rounded-t-xl" />
                     </div>
                   )}
 
                   {/* 1st Place */}
-                  {results[0] && (
+                  {sortedLeaderboard[0] && (
                     <div className="flex flex-col items-center flex-1 z-20">
                       <div className="relative mb-2">
                         <div className="absolute -inset-2 bg-secondary/30 rounded-full blur-md" />
-                        {results[0].userAvatar ? (
-                           <img src={results[0].userAvatar} alt="" className="relative w-20 h-20 rounded-full border-4 border-secondary object-cover" />
+                        {sortedLeaderboard[0].userAvatar ? (
+                           <img src={sortedLeaderboard[0].userAvatar} alt="" className="relative w-20 h-20 rounded-full border-4 border-secondary object-cover" />
                         ) : (
-                           <div className="relative w-20 h-20 rounded-full border-4 border-secondary bg-surface-container flex items-center justify-center font-bold text-xs">{results[0].userName?.substring(0, 2).toUpperCase()}</div>
+                           <div className="relative w-20 h-20 rounded-full border-4 border-secondary bg-surface-container flex items-center justify-center font-bold text-xs">{sortedLeaderboard[0].userName?.substring(0, 2).toUpperCase()}</div>
                         )}
                         <div className="absolute -top-3 -right-2 bg-secondary text-on-secondary text-[10px] font-black w-7 h-7 flex items-center justify-center rounded-full border-2 border-background shadow-glow">#1</div>
                       </div>
-                      <div className="text-xs font-bold text-secondary mb-2">{results[0].userName}</div>
+                      <div className="text-xs font-bold text-secondary mb-2">{sortedLeaderboard[0].userName}</div>
                       <div className="w-full h-32 bg-[#313b18] rounded-t-xl" />
                     </div>
                   )}
 
                   {/* 3rd Place */}
-                  {results[2] && (
+                  {sortedLeaderboard[2] && (
                     <div className="flex flex-col items-center flex-1 z-10">
                       <div className="relative mb-2">
-                        {results[2].userAvatar ? (
-                           <img src={results[2].userAvatar} alt="" className="w-14 h-14 rounded-full border-4 border-[#b07044] object-cover" />
+                        {sortedLeaderboard[2].userAvatar ? (
+                           <img src={sortedLeaderboard[2].userAvatar} alt="" className="w-14 h-14 rounded-full border-4 border-[#b07044] object-cover" />
                         ) : (
-                           <div className="w-14 h-14 rounded-full border-4 border-[#b07044] bg-surface-container flex items-center justify-center font-bold text-xs">{results[2].userName?.substring(0, 2).toUpperCase()}</div>
+                           <div className="w-14 h-14 rounded-full border-4 border-[#b07044] bg-surface-container flex items-center justify-center font-bold text-xs">{sortedLeaderboard[2].userName?.substring(0, 2).toUpperCase()}</div>
                         )}
                         <div className="absolute -top-3 -right-2 bg-[#d97c3b] text-white text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-full border-2 border-background">#3</div>
                       </div>
-                      <div className="text-xs font-bold text-on-surface mb-2">{results[2].userName}</div>
+                      <div className="text-xs font-bold text-on-surface mb-2">{sortedLeaderboard[2].userName}</div>
                       <div className="w-full h-20 bg-[#422d20] rounded-t-xl" />
                     </div>
                   )}
@@ -789,10 +828,10 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
 
               {/* List */}
               <div className="space-y-2">
-                {results.length === 0 ? (
+                {sortedLeaderboard.length === 0 ? (
                   <div className="text-center text-on-surface-variant py-8">No results logged yet. Be the first!</div>
                 ) : (
-                  results.map((result, index) => (
+                  sortedLeaderboard.map((result, index) => (
                     <div key={result.id} className={`flex items-center justify-between p-4 rounded-xl ${result.userId === user?.uid ? 'border-l-4 border-secondary bg-secondary/5' : 'bg-surface-container-low'}`}>
                       <div className="flex items-center gap-4">
                         <span className={`text-sm font-bold w-4 ${result.userId === user?.uid ? 'text-secondary' : 'text-on-surface-variant'}`}>{index + 1}</span>
@@ -809,10 +848,12 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                         </button>
                       )}
                       <div className="text-right">
-                        <div className="font-bold text-lg text-on-surface">{result.timeOrReps}</div>
-                        <div className="text-[10px] font-bold text-secondary uppercase tracking-widest">{result.scale} {result.isCapped && '(Capped)'}</div>
+                        <div className="font-bold text-lg text-secondary mb-1">{calculateScore(result)} pts</div>
+                        <div className="font-medium text-sm text-on-surface">{result.timeOrReps}</div>
+                        <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">{result.scale} {result.isCapped && '(Capped)'}</div>
                         {result.userId === user?.uid && (
-                          <button type="button" onClick={handleEditOwnResult} className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest hover:text-on-surface">
+                          <button type="button" onClick={handleEditOwnResult} className="text-[10px] font-bold text-secondary uppercase tracking-widest hover:text-secondary-light mt-1">
+
                             Edit
                           </button>
                         )}
@@ -882,7 +923,10 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                                 </div>
                               </div>
                             </div>
-                            <div className="text-xs font-bold text-secondary uppercase tracking-widest">{item.scale}</div>
+                            <div className="text-right">
+                              <div className="text-xs font-bold text-secondary uppercase tracking-widest">{item.scale}</div>
+                              <div className="text-xs font-black text-on-surface mt-1">{calculateScore(item)} pts</div>
+                            </div>
                           </div>
                           {item.notes && <div className="text-sm text-on-surface-variant whitespace-pre-line">{item.notes}</div>}
                           {item.imageUrl && (
@@ -890,6 +934,35 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                               <img src={item.imageUrl} alt="Result proof" className="w-full max-h-72 object-cover" />
                             </button>
                           )}
+                          
+                          {/* Reactions UI */}
+                          <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
+                            {[
+                              { type: 'fire', emoji: '🔥', pts: '+10' },
+                              { type: 'clap', emoji: '👏', pts: '+5' },
+                              { type: 'yawn', emoji: '🥱', pts: '-5' },
+                              { type: 'liar', emoji: '🤥', pts: '-15' }
+                            ].map((reaction) => {
+                              const reactionsObj = item.reactions || {};
+                              const count = Object.values(reactionsObj).filter(v => v === reaction.type).length;
+                              const hasReacted = user && reactionsObj[user.uid] === reaction.type;
+                              
+                              return (
+                                <button
+                                  key={reaction.type}
+                                  onClick={() => handleReaction(item.id, reaction.type as any)}
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
+                                    hasReacted 
+                                      ? 'bg-secondary text-on-secondary shadow-glow border border-secondary' 
+                                      : 'bg-surface-container border border-outline-variant/30 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'
+                                  }`}
+                                >
+                                  <span>{reaction.emoji}</span>
+                                  {count > 0 && <span>{count}</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       );
                     } else {
