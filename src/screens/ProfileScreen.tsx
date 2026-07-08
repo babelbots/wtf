@@ -181,8 +181,25 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
             </div>
             <div className="p-6 overflow-y-auto">
               <h3 className="text-2xl font-black text-on-surface mb-4">{selectedWod.title || 'WOD Info'}</h3>
-              <div className="whitespace-pre-wrap text-on-surface-variant font-medium text-sm">
-                {selectedWod.description || 'No description available for this WOD.'}
+              <div className="flex flex-col gap-4">
+                {selectedWod.strength && (
+                  <div>
+                    <div className="text-secondary text-xs font-bold uppercase tracking-widest mb-1">Strength</div>
+                    <div className="whitespace-pre-wrap text-on-surface-variant font-medium text-sm">{selectedWod.strength}</div>
+                  </div>
+                )}
+                {(selectedWod.metcon || selectedWod.description) && (
+                  <div>
+                    <div className="text-secondary text-xs font-bold uppercase tracking-widest mb-1">Metcon / Description</div>
+                    <div className="whitespace-pre-wrap text-on-surface-variant font-medium text-sm">{selectedWod.metcon || selectedWod.description}</div>
+                  </div>
+                )}
+                {selectedWod.timeCap && (
+                  <div>
+                    <div className="text-secondary text-xs font-bold uppercase tracking-widest mb-1">Time Cap</div>
+                    <div className="whitespace-pre-wrap text-on-surface-variant font-medium text-sm">{selectedWod.timeCap}</div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
