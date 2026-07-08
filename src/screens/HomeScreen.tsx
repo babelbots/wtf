@@ -77,13 +77,19 @@ export function HomeScreen({ onNavigateToGroup, onNavigateToCreateGroup, onNavig
                     className="bg-surface-container rounded-2xl overflow-hidden glass-card transition-all hover:scale-[1.02] cursor-pointer group"
                   >
                     <div className="relative h-48 w-full bg-[#1b2200] flex items-center justify-center overflow-hidden">
-                      <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
-                      
-                      <div className="flex flex-wrap gap-4 justify-center items-center opacity-30 text-secondary">
-                        <Dumbbell size={48} />
-                        <Timer size={48} />
-                        <Trophy size={48} />
-                      </div>
+                      {group.imageUrl ? (
+                        <img src={group.imageUrl} alt={group.name} className="w-full h-full object-cover opacity-90 transition-transform group-hover:scale-105" />
+                      ) : (
+                        <>
+                          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
+                          
+                          <div className="flex flex-wrap gap-4 justify-center items-center opacity-30 text-secondary">
+                            <Dumbbell size={48} />
+                            <Timer size={48} />
+                            <Trophy size={48} />
+                          </div>
+                        </>
+                      )}
 
                       {group.type === 'official' && (
                         <div className="absolute top-4 left-4 bg-primary text-on-primary px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest flex items-center gap-1.5 shadow-glow">
