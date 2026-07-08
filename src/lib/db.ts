@@ -117,3 +117,42 @@ export async function deleteGroup(groupId: string) {
     console.warn('Group was hidden, but hard delete cleanup failed.', error);
   }
 }
+
+export async function getUserResultsHistory(userId: string) {
+  const groups = await getUserGroups(userId);
+  const history: any[] = [];
+  
+  for (const group of groups) {
+    const resultsRef = collection(db, 'groups', group.id, 'results');
+    const q = query(resultsRef, where('userId', '==', userId));
+    const snap = await getDocs(q);
+    
+    for (const docSnap of snap.docs) {
+      const resultData = docSnap.data();
+      const wodId = resultData.wodId;
+      
+      let wodData = null;
+      if (wodId) {
+        const wodRef = doc(db, 'groups', group.id, 'wods', wodId);
+        const wodSnap = await getDoc(wodRef);
+        if (wodSnap.exists()) {
+          wodData = wodSnap.data();
+        }
+      }
+      
+      history.push({
+        id: docSnap.id,
+        groupId: group.id,
+        groupName: group.name,
+        ...resultData,
+        wod: wodData
+      });
+    }
+  }
+  
+  return history.sort((a, b) => {
+    const timeA = a.loggedAt || a.createdAt || '';
+    const timeB = b.loggedAt || b.createdAt || '';
+    return timeB.localeCompare(timeA);
+  });
+}

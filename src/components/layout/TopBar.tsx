@@ -6,9 +6,10 @@ import { useAuth } from '../../contexts/AuthContext';
 interface TopBarProps {
   title?: string;
   showSettings?: boolean;
+  onProfile?: () => void;
 }
 
-export function TopBar({ title = "WOD the FAQ", showSettings = false }: TopBarProps) {
+export function TopBar({ title = "WOD the FAQ", showSettings = false, onProfile }: TopBarProps) {
   const { user } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
 
@@ -25,10 +26,18 @@ export function TopBar({ title = "WOD the FAQ", showSettings = false }: TopBarPr
           <div className="absolute left-0 top-12 w-48 bg-surface-container-high border border-white/10 rounded-xl shadow-xl overflow-hidden z-50">
             <button 
               onClick={() => { setShowMenu(false); window.location.href = '/'; }} 
-              className="w-full text-left px-4 py-3 text-sm font-bold text-on-surface hover:bg-white/5 transition-colors"
+              className="w-full text-left px-4 py-3 text-sm font-bold text-on-surface hover:bg-white/5 transition-colors border-b border-white/5"
             >
               Home
             </button>
+            {onProfile && (
+              <button 
+                onClick={() => { setShowMenu(false); onProfile(); }} 
+                className="w-full text-left px-4 py-3 text-sm font-bold text-on-surface hover:bg-white/5 transition-colors"
+              >
+                Profile
+              </button>
+            )}
           </div>
         )}
         <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-on-surface ml-2">

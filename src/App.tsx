@@ -5,7 +5,7 @@ import { WodScreen } from './screens/WodScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { CreateGroupScreen } from './screens/CreateGroupScreen';
 import { JoinGroupScreen } from './screens/JoinGroupScreen';
-import { BottomNav } from './components/layout/BottomNav';
+import { ProfileScreen } from './screens/ProfileScreen';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 function AppContent() {
@@ -29,6 +29,8 @@ function AppContent() {
         return <CreateGroupScreen onBack={() => setCurrentScreen('home')} onCreate={() => setCurrentScreen('home')} />;
       case 'join-group':
         return <JoinGroupScreen onBack={() => setCurrentScreen('home')} onJoin={() => setCurrentScreen('home')} />;
+      case 'profile':
+        return <ProfileScreen onBack={() => setCurrentScreen('home')} />;
       case 'home':
       default:
         return <HomeScreen 
@@ -38,6 +40,7 @@ function AppContent() {
           }} 
           onNavigateToCreateGroup={() => setCurrentScreen('create-group')}
           onNavigateToJoinGroup={() => setCurrentScreen('join-group')}
+          onNavigateToProfile={() => setCurrentScreen('profile')}
         />;
     }
   };

@@ -8,9 +8,10 @@ interface HomeScreenProps {
   onNavigateToGroup: (groupId: string) => void;
   onNavigateToCreateGroup: () => void;
   onNavigateToJoinGroup: () => void;
+  onNavigateToProfile: () => void;
 }
 
-export function HomeScreen({ onNavigateToGroup, onNavigateToCreateGroup, onNavigateToJoinGroup }: HomeScreenProps) {
+export function HomeScreen({ onNavigateToGroup, onNavigateToCreateGroup, onNavigateToJoinGroup, onNavigateToProfile }: HomeScreenProps) {
   const { user } = useAuth();
   const [groups, setGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +39,7 @@ export function HomeScreen({ onNavigateToGroup, onNavigateToCreateGroup, onNavig
         <div className="vibrant-glow-green absolute inset-0 opacity-50" />
       </div>
 
-      <TopBar showSettings={false} title="Home" />
+      <TopBar showSettings={false} title="Home" onProfile={onNavigateToProfile} />
 
       <main className="relative z-10 max-w-5xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-8">
         
