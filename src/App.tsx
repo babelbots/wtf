@@ -14,6 +14,13 @@ function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!user) {
+      setCurrentScreen('home');
+      setActiveGroupId(null);
+    }
+  }, [user]);
+
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center text-on-surface">Loading...</div>;
   }
@@ -29,7 +36,10 @@ function AppContent() {
       case 'season-ranking':
         return <SeasonRankingScreen groupId={activeGroupId!} onBack={() => setCurrentScreen('wod')} />;
       case 'create-group':
-        return <CreateGroupScreen onBack={() => setCurrentScreen('home')} onCreate={() => setCurrentScreen('home')} />;
+        return <CreateGroupScreen onBack={() => setCurrentScreen('home')} onCreate={(id) => {
+          setActiveGroupId(id);
+          setCurrentScreen('wod');
+        }} />;
       case 'join-group':
         return <JoinGroupScreen onBack={() => setCurrentScreen('home')} onJoin={() => setCurrentScreen('home')} />;
       case 'profile':

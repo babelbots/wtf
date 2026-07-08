@@ -72,10 +72,20 @@ export async function getUserGroups(userId: string) {
 
     const memberSnap = await getDoc(doc(db, 'groups', groupDoc.id, 'members', userId));
     if (memberSnap.exists()) {
-      groups.push({ id: groupDoc.id, ...groupData, userRole: memberSnap.data().role });
+      groups.push({ 
+        id: groupDoc.id, 
+        ...groupData, 
+        userRole: memberSnap.data().role,
+        joinedAt: memberSnap.data().joinedAt || groupData.createdAt
+      });
     }
   }
-  return groups;
+  
+  return groups.sort((a, b) => {
+    const timeA = a.joinedAt ? new Date(a.joinedAt).getTime() : 0;
+    const timeB = b.joinedAt ? new Date(b.joinedAt).getTime() : 0;
+    return timeB - timeA;
+  });
 }
 
 export async function leaveGroup(groupId: string, userId: string) {
