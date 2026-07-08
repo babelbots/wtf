@@ -1,16 +1,11 @@
+/// <reference types="vite/client" />
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-const defaultAuthDomain = "gen-lang-client-0951110180.firebaseapp.com";
-const isVercelApp = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app');
-const runtimeAuthDomain = isVercelApp
-  ? window.location.host
-  : import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || defaultAuthDomain;
-
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyB261vO9IN_TcdACeRZdKDwa37UmWMJogg",
-  authDomain: runtimeAuthDomain,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "gen-lang-client-0951110180.firebaseapp.com",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "gen-lang-client-0951110180",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "gen-lang-client-0951110180.firebasestorage.app",
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "1050214145804",
