@@ -60,16 +60,16 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
         const data = memberSnap.data();
         const currentPoints = data.points || 100;
         
-        // Check if user already logged a WOD today
-        const today = new Date().toISOString().split('T')[0];
-        const lastWodDate = data.lastWodDate ? data.lastWodDate.split('T')[0] : null;
+        // Check if user already logged a WOD today using local date
+        const today = new Date().toLocaleDateString('en-CA');
+        const lastWodDate = data.lastWodDate ? new Date(data.lastWodDate).toLocaleDateString('en-CA') : null;
         if (lastWodDate === today) {
           alert('This athlete already logged a WOD today!');
           return;
         }
 
         // Check if already reported today
-        const lastReportedDate = data.lastReportedDate ? data.lastReportedDate.split('T')[0] : null;
+        const lastReportedDate = data.lastReportedDate ? new Date(data.lastReportedDate).toLocaleDateString('en-CA') : null;
         if (lastReportedDate === today) {
           alert('This athlete was already reported for missing today!');
           return;
@@ -137,12 +137,12 @@ export function SeasonRankingScreen({ groupId, onBack }: SeasonRankingScreenProp
                     <button 
                       onClick={() => handleReportMissedDay(member.id)}
                       disabled={
-                        (member.lastWodDate && member.lastWodDate.split('T')[0] === new Date().toISOString().split('T')[0]) ||
-                        (member.lastReportedDate && member.lastReportedDate.split('T')[0] === new Date().toISOString().split('T')[0])
+                        (member.lastWodDate && new Date(member.lastWodDate).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')) ||
+                        (member.lastReportedDate && new Date(member.lastReportedDate).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA'))
                       }
                       className="text-xs font-bold bg-error/20 text-error px-3 py-1.5 rounded-full hover:bg-error/30 transition-colors flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
-                      <XCircle size={14} /> Missed Today
+                      🚨 Missed Today
                     </button>
                   )}
                 </div>
