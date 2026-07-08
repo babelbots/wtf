@@ -507,7 +507,7 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                    )}
                    <div className="space-y-2">
                      <label className="text-xs font-bold text-primary-light uppercase tracking-wider">Title</label>
-                     <input type="text" value={newWodTitle} onChange={e => setNewWodTitle(e.target.value)} placeholder="e.g. Hero WOD Murph" className="w-full bg-surface-container rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-secondary font-bold" />
+                     <input type="text" disabled={isTranscribing} value={newWodTitle} onChange={e => setNewWodTitle(e.target.value)} placeholder="e.g. Hero WOD Murph" className="w-full bg-surface-container rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-secondary font-bold disabled:opacity-50" />
                    </div>
                    <div className="space-y-2">
                      <label className="text-xs font-bold text-primary-light uppercase tracking-wider mb-1 block">Workout Type</label>
@@ -516,8 +516,9 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                          <button
                            key={type}
                            type="button"
+                           disabled={isTranscribing}
                            onClick={() => setNewWodType(type)}
-                           className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors border ${newWodType === type ? 'bg-secondary text-on-secondary border-secondary shadow-glow' : 'border-outline-variant/30 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'}`}
+                           className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors border disabled:opacity-50 disabled:cursor-not-allowed ${newWodType === type ? 'bg-secondary text-on-secondary border-secondary shadow-glow' : 'border-outline-variant/30 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'}`}
                          >
                            {type}
                          </button>
@@ -526,19 +527,19 @@ export function WodScreen({ groupId, onBack }: WodScreenProps) {
                    </div>
                    <div className="space-y-2">
                      <label className="text-xs font-bold text-primary-light uppercase tracking-wider">Workout Details</label>
-                     <textarea value={newWodDesc} onChange={e => setNewWodDesc(e.target.value)} placeholder="Describe the workout here..." className="w-full bg-surface-container rounded-xl px-4 py-3 text-sm font-medium text-on-surface outline-none focus:ring-2 focus:ring-secondary h-24 resize-none" required />
+                     <textarea disabled={isTranscribing} value={newWodDesc} onChange={e => setNewWodDesc(e.target.value)} placeholder="Describe the workout here..." className="w-full bg-surface-container rounded-xl px-4 py-3 text-sm font-medium text-on-surface outline-none focus:ring-2 focus:ring-secondary h-24 resize-none disabled:opacity-50" required />
                    </div>
                    <div className="space-y-2">
                      <label className="text-xs font-bold text-primary-light uppercase tracking-wider">Time Cap (Optional)</label>
-                     <input type="text" value={newWodTimeCap} onChange={e => setNewWodTimeCap(e.target.value)} placeholder="e.g. 20 min, 12:00, 30 minute cap" className="w-full bg-surface-container rounded-xl px-4 py-3 text-sm font-bold text-on-surface outline-none focus:ring-2 focus:ring-secondary" />
+                     <input type="text" disabled={isTranscribing} value={newWodTimeCap} onChange={e => setNewWodTimeCap(e.target.value)} placeholder="e.g. 20 min, 12:00, 30 minute cap" className="w-full bg-surface-container rounded-xl px-4 py-3 text-sm font-bold text-on-surface outline-none focus:ring-2 focus:ring-secondary disabled:opacity-50" />
                    </div>
                    <div className="space-y-2">
                      <label className="text-xs font-bold text-primary-light uppercase tracking-wider">Notes & Weights (Optional)</label>
-                     <textarea value={newWodNotes} onChange={e => setNewWodNotes(e.target.value)} placeholder="e.g. RX Weights: 60kg/40kg..." className="w-full bg-surface-container rounded-xl px-4 py-3 text-sm font-medium text-on-surface outline-none focus:ring-2 focus:ring-secondary h-16 resize-none" />
+                     <textarea disabled={isTranscribing} value={newWodNotes} onChange={e => setNewWodNotes(e.target.value)} placeholder="e.g. RX Weights: 60kg/40kg..." className="w-full bg-surface-container rounded-xl px-4 py-3 text-sm font-medium text-on-surface outline-none focus:ring-2 focus:ring-secondary h-16 resize-none disabled:opacity-50" />
                    </div>
                    <div className="flex gap-2 mt-4">
-                     <button type="button" onClick={() => { setShowCreateForm(false); setIsEditingWod(false); }} className="flex-1 py-3 font-bold text-on-surface-variant hover:text-on-surface">Cancel</button>
-                     <button type="submit" disabled={newWodCreating || !newWodDesc} className="flex-1 py-3 bg-secondary text-on-secondary font-bold rounded-full disabled:opacity-50">
+                     <button type="button" disabled={isTranscribing} onClick={() => { setShowCreateForm(false); setIsEditingWod(false); }} className="flex-1 py-3 font-bold text-on-surface-variant hover:text-on-surface disabled:opacity-50">Cancel</button>
+                     <button type="submit" disabled={newWodCreating || isTranscribing || !newWodDesc} className="flex-1 py-3 bg-secondary text-on-secondary font-bold rounded-full disabled:opacity-50">
                        {newWodCreating ? 'Saving...' : (isEditingWod ? 'Save Changes' : 'Post WOD')}
                      </button>
                    </div>
