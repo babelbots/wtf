@@ -90,8 +90,23 @@ export function WodScreen({ groupId, onBack, onNavigateToRanking }: WodScreenPro
             
             if (role === 'admin') {
               const membersSnap = await getDocs(collection(db, 'groups', groupId, 'members'));
-              const membersList = membersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-              setGroupMembers(membersList);
+              const fetchedMembers = await Promise.all(membersSnap.docs.map(async (d) => {
+                const data = d.data();
+                let name = `Member ${d.id.substring(0, 5)}`;
+                let avatarUrl = '';
+                try {
+                  const userDoc = await getDoc(doc(db, 'users', d.id));
+                  if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    name = userData.name || userData.displayName || name;
+                    avatarUrl = userData.avatarUrl || userData.photoURL || '';
+                  }
+                } catch (e) {
+                  console.error('Error fetching user for dropdown', e);
+                }
+                return { id: d.id, ...data, name, avatarUrl };
+              }));
+              setGroupMembers(fetchedMembers);
             }
           }
         }
