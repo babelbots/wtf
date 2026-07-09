@@ -227,3 +227,20 @@ export async function updateGroupSettings(groupId: string, name: string, imageUr
   if (imageUrl !== undefined) data.imageUrl = imageUrl;
   await updateDoc(groupRef, data);
 }
+
+export async function runMigration() {
+  const groupsRef = collection(db, 'groups');
+  const snapshot = await getDocs(groupsRef);
+  let updatedCount = 0;
+  for (const groupDoc of snapshot.docs) {
+    const groupId = groupDoc.id;
+    const membersRef = collection(db, 'groups', groupId, 'members');
+    const membersSnapshot = await getDocs(membersRef);
+    const memberIds = membersSnapshot.docs.map(doc => doc.id);
+    if (memberIds.length > 0) {
+      await updateDoc(doc(db, 'groups', groupId), { memberIds });
+      updatedCount++;
+    }
+  }
+  return updatedCount;
+}
