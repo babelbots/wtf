@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { User, Calendar, Target, Award, ArrowLeft, Clock, LogOut, Info, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getUserResultsHistory, runMigration } from '../lib/db';
+import { getUserResultsHistory } from '../lib/db';
 import { logout } from '../lib/firebase';
 
 interface ProfileScreenProps {
@@ -13,7 +13,6 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedWod, setSelectedWod] = useState<any>(null);
-  const [migrating, setMigrating] = useState(false);
 
   useEffect(() => {
     async function loadHistory() {
@@ -81,25 +80,6 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
               <Award size={16} />
               {history.length} WODs Completed
             </div>
-            
-            {/* Temporary Migration Button */}
-            <button 
-              onClick={async () => {
-                setMigrating(true);
-                try {
-                  const count = await runMigration();
-                  alert(`Migración completada. ${count} grupos actualizados. Por favor, recarga la aplicación.`);
-                  window.location.reload();
-                } catch (e: any) {
-                  alert("Error en migración: " + e.message);
-                }
-                setMigrating(false);
-              }}
-              disabled={migrating}
-              className="mt-3 ml-2 inline-flex items-center gap-2 bg-secondary text-on-secondary px-3 py-1 rounded-full text-sm font-bold hover:bg-secondary/80 disabled:opacity-50"
-            >
-              {migrating ? 'Recuperando...' : 'Recuperar Grupos (Fix)'}
-            </button>
           </div>
         </section>
 
