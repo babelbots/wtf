@@ -61,6 +61,15 @@ export function WodScreen({ groupId, onBack, onNavigateToRanking }: WodScreenPro
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
+  const [groupMembers, setGroupMembers] = useState<any[]>([]);
+  const [targetUserId, setTargetUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user && !targetUserId) {
+      setTargetUserId(user.uid);
+    }
+  }, [user]);
+
   useEffect(() => {
     async function loadData() {
       if (!groupId) return;
@@ -76,7 +85,14 @@ export function WodScreen({ groupId, onBack, onNavigateToRanking }: WodScreenPro
         if (user) {
           const memberSnap = await getDoc(doc(db, 'groups', groupId, 'members', user.uid));
           if (memberSnap.exists()) {
-            setUserRole(memberSnap.data().role);
+            const role = memberSnap.data().role;
+            setUserRole(role);
+            
+            if (role === 'admin') {
+              const membersSnap = await getDocs(collection(db, 'groups', groupId, 'members'));
+              const membersList = membersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+              setGroupMembers(membersList);
+            }
           }
         }
 
@@ -125,7 +141,7 @@ export function WodScreen({ groupId, onBack, onNavigateToRanking }: WodScreenPro
     };
   }, [groupId, user]);
 
-  const myResult = user ? results.find((result) => result.userId === user.uid) : null;
+  const myResult = targetUserId ? results.find((result) => result.userId === targetUserId) : null;
 
   useEffect(() => {
     if (!group || !wod) {
@@ -276,7 +292,7 @@ export function WodScreen({ groupId, onBack, onNavigateToRanking }: WodScreenPro
 
   const handleTimeBlur = () => {
     const val = timeOrReps.trim();
-    if (/^\d+$/.test(val)) return;
+    if (/^\d+$/.test(val) || val.includes('+')) return;
 
     const timeMatch = val.match(/^(\d+)\D+(\d{1,2})$/);
     if (timeMatch) {
@@ -299,16 +315,27 @@ export function WodScreen({ groupId, onBack, onNavigateToRanking }: WodScreenPro
   };
 
   const handleSubmitResult = async () => {
-    if (!user || !wod || !timeOrReps) return;
+    if (!user || !wod || !timeOrReps || !targetUserId) return;
     setSubmitting(true);
     setResultSaveError('');
     try {
+      let targetUserDisplayName = user.displayName;
+      let targetUserAvatar = user.photoURL;
+
+      if (targetUserId !== user.uid) {
+        const targetMember = groupMembers.find(m => m.id === targetUserId);
+        if (targetMember) {
+          targetUserDisplayName = targetMember.displayName || targetMember.name || 'Anonymous';
+          targetUserAvatar = targetMember.photoURL || targetMember.avatar || '';
+        }
+      }
+
       const resultsRef = collection(db, 'groups', groupId, 'results');
       const resultData = {
         wodId: wod.id,
-        userId: user.uid,
-        userName: user.displayName || 'Anonymous',
-        userAvatar: user.photoURL || '',
+        userId: targetUserId,
+        userName: targetUserDisplayName || 'Anonymous',
+        userAvatar: targetUserAvatar || '',
         weight: activeTab === 'rx' ? 'RX' : (weight ? `${weight} ${weightUnit}` : ''),
         timeOrReps,
         scale: activeTab === 'rx' ? 'rx' : 'scaled',
@@ -330,7 +357,7 @@ export function WodScreen({ groupId, onBack, onNavigateToRanking }: WodScreenPro
         
         // Add points for logging a WOD
         try {
-          const memberRef = doc(db, 'groups', groupId, 'members', user.uid);
+          const memberRef = doc(db, 'groups', groupId, 'members', targetUserId);
           const memberSnap = await getDoc(memberRef);
           if (memberSnap.exists()) {
             const currentPoints = memberSnap.data().points || 100;
@@ -684,13 +711,26 @@ export function WodScreen({ groupId, onBack, onNavigateToRanking }: WodScreenPro
             <section id="result-form" className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-on-surface">Log<br/>Performance</h3>
-                <div className="flex bg-surface-container-high rounded-full p-1 border border-white/5">
-                  <button 
-                    onClick={() => setActiveTab(activeTab === 'rx' ? null : 'rx')}
-                    className={`px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 ${activeTab === 'rx' ? 'bg-secondary text-on-secondary shadow-glow' : 'text-on-surface-variant hover:text-on-surface'}`}
-                  >
-                    RX
-                  </button>
+                <div className="flex flex-col items-end gap-2">
+                  {userRole === 'admin' && groupMembers.length > 0 && (
+                    <select
+                      value={targetUserId || user?.uid || ''}
+                      onChange={(e) => setTargetUserId(e.target.value)}
+                      className="bg-surface-container-high border border-white/10 text-on-surface rounded-lg px-3 py-1 text-xs outline-none focus:ring-1 focus:ring-secondary"
+                    >
+                      {groupMembers.map(m => (
+                        <option key={m.id} value={m.id}>{m.displayName || m.name || 'Anonymous'}</option>
+                      ))}
+                    </select>
+                  )}
+                  <div className="flex bg-surface-container-high rounded-full p-1 border border-white/5">
+                    <button 
+                      onClick={() => setActiveTab(activeTab === 'rx' ? null : 'rx')}
+                      className={`px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 ${activeTab === 'rx' ? 'bg-secondary text-on-secondary shadow-glow' : 'text-on-surface-variant hover:text-on-surface'}`}
+                    >
+                      RX
+                    </button>
+                  </div>
                 </div>
               </div>
 
