@@ -56,7 +56,7 @@ service cloud.firestore {
       // Group Results
       match /results/{resultId} {
         allow read: if isAuthenticated();
-        allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+        allow create: if isAuthenticated() && (request.auth.uid == request.resource.data.userId || isGroupAdmin(groupId));
         allow update: if isAuthenticated() && (
           request.auth.uid == resource.data.userId || 
           isGroupAdmin(groupId) ||
