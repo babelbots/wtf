@@ -8,6 +8,7 @@ import { JoinGroupScreen } from './screens/JoinGroupScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { SeasonRankingScreen } from './screens/SeasonRankingScreen';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { InstallPrompt } from './components/InstallPrompt';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -61,6 +62,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-background text-on-background font-sans selection:bg-secondary selection:text-on-secondary">
       {renderScreen()}
+      <InstallPrompt />
     </div>
   );
 }

@@ -1,0 +1,23 @@
+{
+  "name": "WOD the FAQ",
+  "short_name": "WtF",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "description": "Tu app de WODs y entrenamientos",
+  "icons": [
+    {
+      "src": "/favicon.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
