@@ -1,4 +1,4 @@
-import { collection, addDoc, doc, setDoc, query, where, getDocs, getDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, query, where, getDocs, getDoc, updateDoc, writeBatch, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from './firebase';
 
 export async function createGroup(name: string, type: 'private' | 'official', ownerId: string) {
@@ -11,7 +11,8 @@ export async function createGroup(name: string, type: 'private' | 'official', ow
     joinCode,
     memberCount: 1,
     createdAt: new Date().toISOString(),
-    ownerId
+    ownerId,
+    memberIds: [ownerId]
   });
 
   // Add owner as admin
@@ -55,7 +56,8 @@ export async function joinGroup(joinCode: string, userId: string) {
   // Increment member count (simplified, ideally use transactions)
   const currentCount = groupDoc.data().memberCount || 0;
   await updateDoc(doc(db, 'groups', groupId), {
-    memberCount: currentCount + 1
+    memberCount: currentCount + 1,
+    memberIds: arrayUnion(userId)
   });
 
   return groupId;
@@ -63,14 +65,25 @@ export async function joinGroup(joinCode: string, userId: string) {
 
 export async function getUserGroups(userId: string) {
   const groupsRef = collection(db, 'groups');
-  const snapshot = await getDocs(groupsRef); // Note: For MVP, we fetch all and filter client side. In prod, use a better query pattern or store groupIds on user profile
+  // Use array-contains for fast fetching
+  const q = query(groupsRef, where('memberIds', 'array-contains', userId));
+  const snapshot = await getDocs(q);
   
-  const groups: any[] = [];
-  for (const groupDoc of snapshot.docs) {
-    const groupData = groupDoc.data();
-    if (groupData.deletedAt) continue;
+  // We still need the role and joinedAt which are stored in the member subcollection.
+  // To avoid N+1 queries here, we can fetch all member docs in parallel.
+  const groupDocs = snapshot.docs.filter(doc => !doc.data().deletedAt);
+  
+  const memberPromises = groupDocs.map(groupDoc => 
+    getDoc(doc(db, 'groups', groupDoc.id, 'members', userId))
+  );
+  const memberSnaps = await Promise.all(memberPromises);
 
-    const memberSnap = await getDoc(doc(db, 'groups', groupDoc.id, 'members', userId));
+  const groups: any[] = [];
+  
+  groupDocs.forEach((groupDoc, index) => {
+    const groupData = groupDoc.data();
+    const memberSnap = memberSnaps[index];
+    
     if (memberSnap.exists()) {
       groups.push({ 
         id: groupDoc.id, 
@@ -79,7 +92,7 @@ export async function getUserGroups(userId: string) {
         joinedAt: memberSnap.data().joinedAt || groupData.createdAt
       });
     }
-  }
+  });
   
   return groups.sort((a, b) => {
     const timeA = a.joinedAt ? new Date(a.joinedAt).getTime() : 0;
@@ -99,7 +112,8 @@ export async function leaveGroup(groupId: string, userId: string) {
   if (groupSnap.exists()) {
     const currentCount = groupSnap.data().memberCount || 1;
     await updateDoc(groupRef, {
-      memberCount: Math.max(0, currentCount - 1)
+      memberCount: Math.max(0, currentCount - 1),
+      memberIds: arrayRemove(userId)
     });
   }
 }
@@ -134,22 +148,54 @@ export async function getUserResultsHistory(userId: string) {
   const groups = await getUserGroups(userId);
   const history: any[] = [];
   
-  for (const group of groups) {
+  // Fetch results for all groups in parallel
+  const resultsPromises = groups.map(group => {
     const resultsRef = collection(db, 'groups', group.id, 'results');
     const q = query(resultsRef, where('userId', '==', userId));
-    const snap = await getDocs(q);
-    
-    for (const docSnap of snap.docs) {
+    return getDocs(q).then(snap => ({ group, docs: snap.docs }));
+  });
+  
+  const resultsSnapshots = await Promise.all(resultsPromises);
+  
+  // Collect all unique WOD IDs and their references to fetch in parallel
+  const wodRefsToFetch: { ref: any; groupId: string; wodId: string }[] = [];
+  
+  resultsSnapshots.forEach(({ group, docs }) => {
+    docs.forEach(docSnap => {
+      const resultData = docSnap.data();
+      if (resultData.wodId) {
+        wodRefsToFetch.push({
+          ref: doc(db, 'groups', group.id, 'wods', resultData.wodId),
+          groupId: group.id,
+          wodId: resultData.wodId
+        });
+      }
+    });
+  });
+  
+  // Fetch all WODs in parallel
+  const wodDocs = await Promise.all(wodRefsToFetch.map(item => getDoc(item.ref)));
+  
+  // Create a map for quick WOD lookup
+  const wodDataMap = new Map();
+  wodDocs.forEach(wodSnap => {
+    if (wodSnap.exists()) {
+      // Map key could be groupId_wodId to ensure uniqueness across groups
+      const groupId = wodSnap.ref.parent.parent?.id;
+      if (groupId) {
+        wodDataMap.set(`${groupId}_${wodSnap.id}`, wodSnap.data());
+      }
+    }
+  });
+
+  resultsSnapshots.forEach(({ group, docs }) => {
+    docs.forEach(docSnap => {
       const resultData = docSnap.data();
       const wodId = resultData.wodId;
       
       let wodData = null;
       if (wodId) {
-        const wodRef = doc(db, 'groups', group.id, 'wods', wodId);
-        const wodSnap = await getDoc(wodRef);
-        if (wodSnap.exists()) {
-          wodData = wodSnap.data();
-        }
+        wodData = wodDataMap.get(`${group.id}_${wodId}`) || null;
       }
       
       history.push({
@@ -159,8 +205,8 @@ export async function getUserResultsHistory(userId: string) {
         ...resultData,
         wod: wodData
       });
-    }
-  }
+    });
+  });
   
   return history.sort((a, b) => {
     const timeA = a.loggedAt || a.createdAt || '';
