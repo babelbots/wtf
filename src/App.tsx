@@ -9,16 +9,19 @@ import { ProfileScreen } from './screens/ProfileScreen';
 import { SeasonRankingScreen } from './screens/SeasonRankingScreen';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { InstallPrompt } from './components/InstallPrompt';
+import { LandingScreen } from './screens/LandingScreen';
 
 function AppContent() {
   const { user, loading } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
     if (!user) {
       setCurrentScreen('home');
       setActiveGroupId(null);
+      setShowLogin(false);
     }
   }, [user]);
 
@@ -27,7 +30,11 @@ function AppContent() {
   }
 
   if (!user) {
-    return <LoginScreen />;
+    return showLogin ? (
+      <LoginScreen onBack={() => setShowLogin(false)} />
+    ) : (
+      <LandingScreen onLogin={() => setShowLogin(true)} />
+    );
   }
 
   const renderScreen = () => {

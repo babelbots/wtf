@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Dumbbell } from 'lucide-react';
+import { Mail, Lock, Dumbbell, ArrowLeft } from 'lucide-react';
 import { loginWithGoogle, loginWithEmail, registerWithEmail, loginWithApple } from '../lib/firebase';
 
-export function LoginScreen() {
+interface LoginScreenProps {
+  onBack?: () => void;
+}
+
+export function LoginScreen({ onBack }: LoginScreenProps) {
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -67,8 +71,17 @@ export function LoginScreen() {
       <main className="relative z-10 w-full max-w-md flex flex-col items-center">
         
         {/* Brand Header */}
-        <header className="text-center mb-10 animate-in slide-in-from-top duration-700">
-          <div className="inline-flex items-center justify-center p-4 bg-secondary-container rounded-full mb-6 shadow-glow">
+        <header className="text-center mb-10 animate-in slide-in-from-top duration-700 relative w-full">
+          {onBack && (
+            <button 
+              onClick={onBack}
+              className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-full glass-panel hover:bg-white/10 transition-colors"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="w-6 h-6 text-on-surface" />
+            </button>
+          )}
+          <div className="inline-flex items-center justify-center p-4 bg-secondary-container rounded-full mb-6 shadow-glow mx-auto">
             <Dumbbell className="text-secondary w-8 h-8" strokeWidth={2.5} />
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold text-on-background mb-2 tracking-tight">
